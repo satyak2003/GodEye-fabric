@@ -1,0 +1,21 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"crystal": {
+			"loop": "hold_on_last_frame",
+			"animation_length": 2,
+			"bones": {
+				"crystal": {
+					"rotation": {
+						"vector": [0, 0, "math.sin(query.anim_time * 3000) * 3"]
+					}
+				},
+				"container": {
+					"rotation": {
+						"vector": ["-math.sin(query.anim_time * 60) * 3", 0, "math.sin(query.anim_time * 120) * 5"]
+					}
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,22 @@
+{
+  "boss_death": {
+    "sounds": [ "godeye:boss_death" ]
+  },
+  "boss_chance": {
+    "category": "hostile",
+    "sounds": [
+      "godeye:boss_chance"
+    ]
+  },
+  "boss_run": {
+    "category": "hostile",
+    "sounds": [
+      "godeye:boss_run"
+    ]
+  },
+  "your_world": {
+    "sounds": [
+      "godeye:your_world"
+    ]
+  }
+}
