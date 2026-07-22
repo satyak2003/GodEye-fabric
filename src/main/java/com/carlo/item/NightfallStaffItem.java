@@ -148,7 +148,7 @@ public class NightfallStaffItem extends Item implements GeoItem {
                     mob.velocityModified = true;
 
                     // ONE-SHOT MASSIVE DAMAGE (100 damage guarantees an instant kill on standard mobs)
-                    mob.damage(world.getDamageSources().magic(), 100.0f);
+                    mob.damage(world.getDamageSources().magic(), 15.0f);
 
                     // Spawn particles
                     ((ServerWorld)world).spawnParticles(ParticleTypes.SOUL,
@@ -166,7 +166,8 @@ public class NightfallStaffItem extends Item implements GeoItem {
                         // Play a sound when maxed out
                         if (currentSouls == 10) {
                             player.playSound(net.minecraft.sound.SoundEvents.ENTITY_WITHER_SPAWN, 1.0f, 1.0f);
-                            player.playSound(com.carlo.Godeye.VOICE_CHANCE_EVENT, 5.0f, 1.0f);
+                            // FIXED SERVER-SIDE BROADCAST
+                            ((ServerWorld)world).playSound(null, player.getBlockPos(), com.carlo.Godeye.VOICE_CHANCE_EVENT, net.minecraft.sound.SoundCategory.MASTER, 5.0f, 1.0f);
                             player.sendMessage(net.minecraft.text.Text.literal("ORBITAL STRIKE READY! Shift + Right Mouse Button").formatted(net.minecraft.util.Formatting.RED, net.minecraft.util.Formatting.BOLD), true);
                         }
                     }

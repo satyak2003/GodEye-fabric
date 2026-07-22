@@ -24,5 +24,14 @@
     "sounds": [
       "godeye:jumpscare"
     ]
+  },
+  "bgm_domain": {
+    "category": "master",
+    "sounds": [{"name": "godeye:bgm_domain", "stream": true}]
+  },
+  "bgm_boss": {
+    "category": "master",
+    "sounds": [{"name": "godeye:bgm_boss", "stream": true}]
   }
 }
+

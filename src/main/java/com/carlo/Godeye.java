@@ -73,6 +73,9 @@ public class Godeye implements ModInitializer {
 	public static boolean isDimensionCollapsing = false;
 	public static int collapseTicks = 0;
 	public static final int MAX_COLLAPSE_TICKS = 1200; // Exactly 60 seconds to escape
+	// Set to 'true' for fast testing (35-second total haunting).
+	// Set to 'false' for full cinematic release (7-minute total haunting).
+	public static boolean DEBUG_MODE = true;
 
 
 	public static final RegistryKey<World> GODEYE_DIMENSION_KEY = RegistryKey.of(
@@ -115,6 +118,16 @@ public class Godeye implements ModInitializer {
 			net.minecraft.sound.SoundEvent.of(VOICE_YOURS_ID)
 	);
 
+	// NEW BGM REGISTRIES
+	public static final Identifier BGM_DOMAIN_ID = new Identifier(MOD_ID, "bgm_domain");
+	public static final net.minecraft.sound.SoundEvent BGM_DOMAIN_EVENT = Registry.register(Registries.SOUND_EVENT, BGM_DOMAIN_ID, net.minecraft.sound.SoundEvent.of(BGM_DOMAIN_ID));
+
+	public static final Identifier BGM_BOSS_ID = new Identifier(MOD_ID, "bgm_boss");
+	public static final net.minecraft.sound.SoundEvent BGM_BOSS_EVENT = Registry.register(Registries.SOUND_EVENT, BGM_BOSS_ID, net.minecraft.sound.SoundEvent.of(BGM_BOSS_ID));
+
+	// TIMER TO DELAY THE ESCAPE SOUND
+	public static final Map<UUID, Integer> recentlyEscaped = new HashMap<>();
+
 	// Change this line in your Godeye.java
 	public static final NightfallStaffItem NIGHTFALL_STAFF = Registry.register(
 			Registries.ITEM,
@@ -152,6 +165,26 @@ public class Godeye implements ModInitializer {
 	@Override
 	public void onInitialize() {
 
+		// --- HEALTH ADVISORY WARNING ON JOIN ---
+		net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+			ServerPlayerEntity player = handler.player;
+
+			// Check if they have the hidden tag. If not, they are new to the mod!
+			if (!player.getCommandTags().contains("godeye_warned")) {
+				player.addCommandTag("godeye_warned");
+
+				player.sendMessage(Text.literal("\n==================================").formatted(Formatting.DARK_RED, Formatting.BOLD), false);
+				player.sendMessage(Text.literal("⚠ WARNING: GODEYE MOD ⚠").formatted(Formatting.RED, Formatting.BOLD), false);
+				player.sendMessage(Text.literal("This mod contains severe flashing lights, loud jump scares, and intense visual distortion.").formatted(Formatting.GRAY), false);
+				player.sendMessage(Text.literal("\n♫ CINEMATIC AUDIO REQUIRED ♫").formatted(Formatting.GOLD, Formatting.BOLD), false);
+				player.sendMessage(Text.literal("For the intended experience, please ensure your MASTER and MUSIC volumes are turned UP in settings.").formatted(Formatting.YELLOW), false);
+				player.sendMessage(Text.literal("==================================\n").formatted(Formatting.DARK_RED, Formatting.BOLD), false);
+
+				// Play a deep ominous sound to make them read it
+				player.playSound(SoundEvents.ENTITY_WARDEN_HEARTBEAT, SoundCategory.MASTER, 2.0f, 0.5f);
+			}
+		});
+
 		ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
 
 			// Check if the player is respawning inside your custom Boss Dimension
@@ -180,31 +213,75 @@ public class Godeye implements ModInitializer {
 	private void onServerTick(MinecraftServer server) {
 		for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
 			UUID id = player.getUuid();
+			// --- HANDLE DELAYED ESCAPE SOUND ---
+			if (recentlyEscaped.containsKey(id)) {
+				int escapeTicks = recentlyEscaped.get(id) - 1;
+				if (escapeTicks <= 0) {
+					// The player has fully loaded into the Overworld! Play the voice line!
+					player.playSound(com.carlo.Godeye.VOICE_YOURS_EVENT, SoundCategory.MASTER, 5.0f, 1.0f);
+					recentlyEscaped.remove(id);
+				} else {
+					recentlyEscaped.put(id, escapeTicks);
+				}
+			}
+
 			int ticks = playerTicks.getOrDefault(id, 0) + 1;
 			playerTicks.put(id, ticks);
 
-			if (ticks == 1200) sendDistortedMessage(player, 0);
-			else if (ticks == 2400) spawnLoreShrine(player);
-			else if (ticks == 3600) sendDistortedMessage(player, 1);
-			else if (ticks == 4800) sendDistortedMessage(player, 2);
-			else if (ticks == 6000) sendDistortedMessage(player, 3);
-			else if (ticks == 7200) {
+			// --- DYNAMIC HAUNTING TIMELINE ---
+
+			// Debug: 5s (100t)   | Normal: 1m (1200t) - Shrine Spawns
+			if (ticks == getTick(100, 1200)) {
+				spawnLoreShrine(player);
+			}
+			// Debug: 10s (200t)  | Normal: 2m (2400t) - Chat Message 0
+			else if (ticks == getTick(200, 2400)) {
+				sendDistortedMessage(player, 0);
+			}
+			// Debug: 15s (300t)  | Normal: 3m (3600t) - Chat Message 1
+			else if (ticks == getTick(300, 3600)) {
+				sendDistortedMessage(player, 1);
+			}
+			// Debug: 20s (400t)  | Normal: 4m (4800t) - Chat Message 2
+			else if (ticks == getTick(400, 4800)) {
+				sendDistortedMessage(player, 2);
+			}
+			// Debug: 25s (500t)  | Normal: 5m (6000t) - Chat Message 3 (Jumpscares Start)
+			else if (ticks == getTick(500, 6000)) {
+				sendDistortedMessage(player, 3);
+			}
+			// Debug: 30s (600t)  | Normal: 6m (7200t) - Final Message & Nightfall
+			else if (ticks == getTick(600, 7200)) {
 				sendDistortedMessage(player, 4);
 				triggerNightfall(player.getServerWorld());
 			}
-			else if (ticks == 8400) triggerAbduction(player);
+			// Debug: 35s (700t)  | Normal: 7m (8400t) - Abduction!
+			else if (ticks == getTick(700, 8400)) {
+				triggerAbduction(player);
+			}
 
-			if (ticks >= 2400 && ticks < 8400) {
-				triggerDecay(player, ticks);
 
-				if (ticks >= 6000) {
+			// --- DECAY & JUMPSCARE WINDOW ---
+			int startDecay = getTick(200, 2400);
+			int startJumpscares = getTick(500, 6000);
+			int endHaunting = getTick(700, 8400);
+
+			if (ticks >= startDecay && ticks < endHaunting) {
+				triggerDecay(player, ticks); // Environmental decay active
+
+				// Jumpscares start at Message 3
+				if (ticks >= startJumpscares) {
 					ServerWorld world = player.getServerWorld();
 
-					if (world.random.nextInt(60) == 0) {
+					// In Debug Mode, increase spawn frequencies so you don't have to wait
+					int stalkerRng = DEBUG_MODE ? 15 : 60;
+					int jumpscareRng = DEBUG_MODE ? 30 : 150;
+
+					if (world.random.nextInt(stalkerRng) == 0) {
 						triggerStalker(player);
 					}
 
-					if (world.random.nextInt(150) == 0) {
+					if (world.random.nextInt(jumpscareRng) == 0) {
 						triggerInFaceJumpscare(player);
 					}
 				}
@@ -219,6 +296,16 @@ public class Godeye implements ModInitializer {
 					player.addStatusEffect(new StatusEffectInstance(StatusEffects.DARKNESS, 600, 0, false, false, false));
 				}
 
+				// --- NEW: SILENT VOID RESCUE ---
+				// If they fall below Y=0 (before taking void damage at -64), snap them back!
+				if (player.getY() < 0) {
+					player.fallDistance = 0.0f; // Reset fall damage so they don't die on impact
+					player.teleport(world, 0.5, 64, 0.5, player.getYaw(), player.getPitch());
+
+					// Play a creepy Enderman sound and mock them in chat
+					world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 1.0f, 0.5f);
+					player.sendMessage(Text.literal("There is no escape down there. Throw the book.").formatted(Formatting.DARK_GRAY, Formatting.ITALIC), true);
+				}
 				// BUG FIX 1: Massive bounding box so the book never leaves tracking range
 				Box voidBox = new Box(-50, -50, -50, 50, 100, 50);
 				List<ItemEntity> fallingItems = world.getEntitiesByClass(
@@ -278,6 +365,11 @@ public class Godeye implements ModInitializer {
 
 				// LAYER 0: Instant floor expansion & maze deletion
 				if (arenaTransformLayer == 0) {
+					server.getCommandManager().executeWithPrefix(
+							server.getCommandSource(),
+							"stopsound @a master godeye:bgm_domain"
+					);
+					godEyeWorld.playSound(null, arenaCenter, BGM_BOSS_EVENT, SoundCategory.MASTER, 2.0f, 1.0f);
 					for (int x = -radius; x <= radius; x++) {
 						for (int z = -radius; z <= radius; z++) {
 							// 1. Expand the solid floor
@@ -376,10 +468,9 @@ public class Godeye implements ModInitializer {
 									p.getInventory().insertStack(savedStaff);
 								}
 
-								// Teleport them high in the sky (Y=250) to allow chunks to load
 								p.teleport(overworld, randomX + 0.5, 250.0, randomZ + 0.5, p.getYaw(), p.getPitch());
-
-								p.playSound(com.carlo.Godeye.VOICE_YOURS_EVENT, net.minecraft.sound.SoundCategory.MASTER, 5.0f, 1.0f);
+								// Add them to the delay map (40 ticks = 2 seconds)
+								recentlyEscaped.put(p.getUuid(), 100);
 
 								// Grant 20 seconds of Slow Falling and total Resistance so they parachute down safely
 								p.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 400, 0, false, false, false));
@@ -480,6 +571,10 @@ public class Godeye implements ModInitializer {
 			}
 			player.teleport(targetWorld, 0.5, 64, 0.5, player.getYaw(), player.getPitch());
 			player.getInventory().clear();
+			// Slowness 255 removes walking, Jump Boost 250 removes the ability to jump
+			player.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 100, 255, false, false, false));
+			player.addStatusEffect(new StatusEffectInstance(StatusEffects.JUMP_BOOST, 100, 250, false, false, false));
+			player.addStatusEffect(new StatusEffectInstance(StatusEffects.MINING_FATIGUE, 100, 255, false, false, false));
 
 			ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
 			NbtCompound nbt = book.getOrCreateNbt();
@@ -489,6 +584,8 @@ public class Godeye implements ModInitializer {
 			pages.add(NbtString.of("{\"text\":\"He is watching.\\n\\nThe Starfall Beacon is hidden in the dark.\\n\\nCast this book into the abyss to reveal the path, and don't look back.\"}"));
 			nbt.put("pages", pages);
 			player.getInventory().insertStack(book);
+			// Play the creepy exploration BGM
+			targetWorld.playSound(null, player.getBlockPos(), BGM_DOMAIN_EVENT, SoundCategory.MASTER, 1.0f, 1.0f);
 
 			WAITING_FOR_BRIDGE.add(player.getUuid());
 
@@ -770,5 +867,10 @@ public class Godeye implements ModInitializer {
 		} else {
 			LOGGER.error("Failed to load lore_shrine.nbt! Make sure it is in data/godeye/structures/");
 		}
+	}
+
+	//debug mode helper method
+	private int getTick(int debugTicks, int normalTicks) {
+		return DEBUG_MODE ? debugTicks : normalTicks;
 	}
 }

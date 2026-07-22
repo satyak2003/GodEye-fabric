@@ -70,9 +70,19 @@ public class GodEyeBossEntity extends HostileEntity implements GeoEntity {
                         net.minecraft.util.math.BlockPos spawnPos = new net.minecraft.util.math.BlockPos((int)spawnX, 64, (int)spawnZ);
 
                         if (serverWorld.getBlockState(spawnPos).isAir()) {
-                            net.minecraft.entity.mob.MobEntity minion = this.random.nextBoolean() ?
-                                    net.minecraft.entity.EntityType.WITHER_SKELETON.create(serverWorld) :
-                                    net.minecraft.entity.EntityType.ZOMBIE.create(serverWorld);
+                            int spawnRoll = this.random.nextInt(10);
+                            net.minecraft.entity.mob.MobEntity minion;
+
+                            if (spawnRoll == 0) {
+                                // 10% chance to spawn a terrifying Ravager
+                                minion = net.minecraft.entity.EntityType.RAVAGER.create(serverWorld);
+                            } else if (spawnRoll < 5) {
+                                // 40% chance for a Wither Skeleton
+                                minion = net.minecraft.entity.EntityType.WITHER_SKELETON.create(serverWorld);
+                            } else {
+                                // 50% chance for a Zombie
+                                minion = net.minecraft.entity.EntityType.ZOMBIE.create(serverWorld);
+                            }
 
                             if (minion != null) {
                                 minion.refreshPositionAndAngles(spawnX, 64, spawnZ, 0, 0);
