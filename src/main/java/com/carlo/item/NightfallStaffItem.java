@@ -142,13 +142,13 @@ public class NightfallStaffItem extends Item implements GeoItem {
                     if (mob instanceof GodEyeBossEntity) continue;
                     boolean wasAlive = mob.isAlive();
 
-                    // Repulsor push
-                    Vec3d push = mob.getPos().subtract(user.getPos()).normalize().multiply(1.5).add(0, 0.5, 0);
+                    // A very gentle push just for visual effect, so they don't go flying
+                    net.minecraft.util.math.Vec3d push = mob.getPos().subtract(user.getPos()).normalize().multiply(0.2).add(0, 0.2, 0);
                     mob.addVelocity(push.x, push.y, push.z);
                     mob.velocityModified = true;
 
-                    // Deal damage
-                    mob.damage(world.getDamageSources().magic(), 2.0f);
+                    // ONE-SHOT MASSIVE DAMAGE (100 damage guarantees an instant kill on standard mobs)
+                    mob.damage(world.getDamageSources().magic(), 100.0f);
 
                     // Spawn particles
                     ((ServerWorld)world).spawnParticles(ParticleTypes.SOUL,

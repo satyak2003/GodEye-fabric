@@ -3,13 +3,12 @@
 	"id": "godeye",
 	"version": "${version}",
 	"name": "godeye",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "Do you dare to face the infinte void that stares back at you? N̴̨̦͌͐o̸̥͉͒ẗ̸͇͂͜h̶̯̓͝į̷͙͋n̵̰͗g̴̛̔͜ ̷̆ ̙e̵͎̜͆̕s̶̱̎͐c̶̮̅͑ä̶̫́ͅp̵͖̋̓e̶͚̣̊̿s̸̖̕ the god's ̯̰v̶͙̟͛í̸̖͝s̸̺̳̀͗i̴͈̿͝o̶̖̟͒̍n̶͈̬̍ ",
 	"authors": [
-		"Me!"
+		"CarloGoldfield"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"sources": "https://github.com/satyak2003/GodEye-fabric"
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/godeye/icon.png",

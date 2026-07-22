@@ -18,5 +18,11 @@
     "sounds": [
       "godeye:your_world"
     ]
+  },
+  "jumpscare": {
+    "category": "hostile",
+    "sounds": [
+      "godeye:jumpscare"
+    ]
   }
 }

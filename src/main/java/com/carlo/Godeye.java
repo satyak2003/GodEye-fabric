@@ -101,6 +101,13 @@ public class Godeye implements ModInitializer {
 			net.minecraft.sound.SoundEvent.of(VOICE_RUN_ID)
 	);
 
+	public static final Identifier JUMPSCARE_ID = new Identifier(MOD_ID, "jumpscare");
+	public static final net.minecraft.sound.SoundEvent JUMPSCARE_EVENT = net.minecraft.registry.Registry.register(
+			net.minecraft.registry.Registries.SOUND_EVENT,
+			JUMPSCARE_ID,
+			net.minecraft.sound.SoundEvent.of(JUMPSCARE_ID)
+	);
+
 	public static final Identifier VOICE_YOURS_ID = new Identifier(MOD_ID, "your_world");
 	public static final net.minecraft.sound.SoundEvent VOICE_YOURS_EVENT = net.minecraft.registry.Registry.register(
 			net.minecraft.registry.Registries.SOUND_EVENT,
@@ -176,28 +183,30 @@ public class Godeye implements ModInitializer {
 			int ticks = playerTicks.getOrDefault(id, 0) + 1;
 			playerTicks.put(id, ticks);
 
-			if (ticks == 5) sendDistortedMessage(player, 0);
-			else if (ticks == 100) spawnLoreShrine(player);
-			else if (ticks == 200) sendDistortedMessage(player, 1);
-			else if (ticks == 400) sendDistortedMessage(player, 2);
-			else if (ticks == 500) sendDistortedMessage(player, 3);
-			else if (ticks == 600) {
+			if (ticks == 1200) sendDistortedMessage(player, 0);
+			else if (ticks == 2400) spawnLoreShrine(player);
+			else if (ticks == 3600) sendDistortedMessage(player, 1);
+			else if (ticks == 4800) sendDistortedMessage(player, 2);
+			else if (ticks == 6000) sendDistortedMessage(player, 3);
+			else if (ticks == 7200) {
 				sendDistortedMessage(player, 4);
 				triggerNightfall(player.getServerWorld());
 			}
-			else if (ticks == 800) triggerAbduction(player);
+			else if (ticks == 8400) triggerAbduction(player);
 
-			if (ticks >= 200 && ticks < 800) {
+			if (ticks >= 2400 && ticks < 8400) {
 				triggerDecay(player, ticks);
 
-				ServerWorld world = player.getServerWorld();
+				if (ticks >= 6000) {
+					ServerWorld world = player.getServerWorld();
 
-				if (world.random.nextInt(60) == 0) {
-					triggerStalker(player);
-				}
+					if (world.random.nextInt(60) == 0) {
+						triggerStalker(player);
+					}
 
-				if (world.random.nextInt(150) == 0) {
-					triggerInFaceJumpscare(player);
+					if (world.random.nextInt(150) == 0) {
+						triggerInFaceJumpscare(player);
+					}
 				}
 			}
 
@@ -425,18 +434,25 @@ public class Godeye implements ModInitializer {
 		BlockPos playerPos = player.getBlockPos();
 
 		if (ticks % 5 == 0) {
-			int radius = 30;
-			for (int i = 0; i < 100; i++) {
+			int radius = 40; //radius of decay
+			for (int i = 0; i < 300; i++) { // Scans 300 random blocks per tick
 				int x = playerPos.getX() + world.random.nextInt(radius * 2) - radius;
 				int y = playerPos.getY() + world.random.nextInt(40) - 10;
 				int z = playerPos.getZ() + world.random.nextInt(radius * 2) - radius;
 				BlockPos targetPos = new BlockPos(x, y, z);
 				BlockState state = world.getBlockState(targetPos);
+
 				if (state.isIn(BlockTags.LOGS) || state.isIn(BlockTags.LEAVES)) {
+					// Delete the main block
 					world.setBlockState(targetPos, Blocks.AIR.getDefaultState(), 3);
+
+					// Randomly delete the blocks immediately above/below it to rip chunks out of the tree
+					if (world.random.nextBoolean()) world.setBlockState(targetPos.up(), Blocks.AIR.getDefaultState(), 3);
+					if (world.random.nextBoolean()) world.setBlockState(targetPos.down(), Blocks.AIR.getDefaultState(), 3);
 				}
 			}
 		}
+
 		if (ticks > 400 && ticks % 20 == 0) {
 			Box box = new Box(playerPos).expand(40);
 			List<MobEntity> mobs = world.getEntitiesByClass(MobEntity.class, box, entity -> true);
@@ -652,7 +668,8 @@ public class Godeye implements ModInitializer {
 				StatusEffects.SLOWNESS, 60, 255, false, false, false
 		));
 
-		world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_ENDERMAN_STARE, SoundCategory.AMBIENT, 2.0f, 0.5f);
+
+		world.playSound(null, player.getBlockPos(), com.carlo.Godeye.JUMPSCARE_EVENT, SoundCategory.AMBIENT, 5.0f, 1.0f);
 
 		net.minecraft.util.math.Vec3d lookVec = player.getRotationVector();
 		net.minecraft.util.math.Vec3d spawnPos = player.getPos().add(lookVec.multiply(1.5));
@@ -734,7 +751,7 @@ public class Godeye implements ModInitializer {
 			template.place(world, placePos, placePos, placementData, world.random, 2);
 
 			// Play a distant thunder sound to naturally draw the player's attention to that direction!
-			world.playSound(null, placePos, SoundEvents.ENTITY_LIGHTNING_BOLT_THUNDER, SoundCategory.AMBIENT, 3.0f, 0.5f);
+			world.playSound(null, placePos, SoundEvents.ENTITY_LIGHTNING_BOLT_THUNDER, SoundCategory.AMBIENT, 7.0f, 0.5f);
 
 			// Scan the newly placed structure, find the chest, and insert the Lore Book
 			for (int x = 0; x < template.getSize().getX(); x++) {
