@@ -147,8 +147,8 @@ public class NightfallStaffItem extends Item implements GeoItem {
                     mob.addVelocity(push.x, push.y, push.z);
                     mob.velocityModified = true;
 
-                    // ONE-SHOT MASSIVE DAMAGE (100 damage guarantees an instant kill on standard mobs)
-                    mob.damage(world.getDamageSources().magic(), 15.0f);
+                    //damage dealing on right click
+                    mob.damage(world.getDamageSources().magic(), 7.0f);
 
                     // Spawn particles
                     ((ServerWorld)world).spawnParticles(ParticleTypes.SOUL,

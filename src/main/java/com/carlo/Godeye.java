@@ -75,7 +75,7 @@ public class Godeye implements ModInitializer {
 	public static final int MAX_COLLAPSE_TICKS = 1200; // Exactly 60 seconds to escape
 	// Set to 'true' for fast testing (35-second total haunting).
 	// Set to 'false' for full cinematic release (7-minute total haunting).
-	public static boolean DEBUG_MODE = true;
+	public static boolean DEBUG_MODE = false;
 
 
 	public static final RegistryKey<World> GODEYE_DIMENSION_KEY = RegistryKey.of(
