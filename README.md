@@ -14,6 +14,8 @@ Upon joining a world with this mod for the first time, players will receive a he
 
 *Note: For the intended cinematic experience, players MUST have their Master and Music volumes turned up to hear the custom BGM and AI-generated voice lines.*
 
+<img width="1920" height="1080" alt="GODEYE_banner" src="https://github.com/user-attachments/assets/b29cabfc-05ee-42c7-9f0c-ea3e77932f36" />
+
 ---
 
 ## ✨ Features
@@ -44,3 +46,6 @@ To fully utilize this mod, you must provide your own `.ogg` files in the `src/ma
 To bypass the cinematic build-up during development, toggle the debug mode inside `Godeye.java`:
 ```java
 public static boolean DEBUG_MODE = true;
+```
+
+<img width="1080" height="100" alt="footer_git" src="https://github.com/user-attachments/assets/9ddf1553-7bb7-42a7-a2d8-199c79fb392b" />
