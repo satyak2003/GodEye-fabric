@@ -49,3 +49,9 @@ public static boolean DEBUG_MODE = true;
 ```
 
 <img width="1080" height="100" alt="footer_git" src="https://github.com/user-attachments/assets/9ddf1553-7bb7-42a7-a2d8-199c79fb392b" />
+
+Follow me on:
+Youtube:https://www.youtube.com/@goldfieldcarlo
+Discord:https://discord.com/users/852743366352699452
+Instagram:https://www.instagram.com/carlogoldfield
+
