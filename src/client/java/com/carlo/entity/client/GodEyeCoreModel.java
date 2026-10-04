@@ -7,17 +7,17 @@ import net.minecraft.util.Identifier;
 public class GodEyeCoreModel extends GeoModel<GodEyeCoreEntity> {
 
     @Override
-    public Identifier getModelResource(GodEyeCoreEntity object) {
-        return new Identifier("godeye", "geo/godeye_core.geo.json");
+    public Identifier getModelResource(software.bernie.geckolib.renderer.base.GeoRenderState state) {
+        return Identifier.of("godeye", "geo/godeye_core.geo.json");
     }
 
     @Override
-    public Identifier getTextureResource(GodEyeCoreEntity object) {
-        return new Identifier("godeye", "textures/entity/core.png");
+    public Identifier getTextureResource(software.bernie.geckolib.renderer.base.GeoRenderState state) {
+        return Identifier.of("godeye", "textures/entity/core.png");
     }
 
     @Override
     public Identifier getAnimationResource(GodEyeCoreEntity animatable) {
-        return new Identifier("godeye", "animations/godeye_core.animation.json");
+        return Identifier.of("godeye", "animations/godeye_core.animation.json");
     }
 }

@@ -1,10 +1,10 @@
 package com.carlo.entity;
 
 import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimatableManager;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.RawAnimation;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animatable.manager.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.util.GeckoLibUtil;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
@@ -31,24 +31,24 @@ public class GodEyeCoreEntity extends HostileEntity implements GeoEntity {
     // Set the Core's health to 1 so it shatters instantly
     public static DefaultAttributeContainer.Builder setAttributes() {
         return HostileEntity.createHostileAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 1.0D)
-                .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 1.0D); // So it doesn't get pushed around
+                .add(EntityAttributes.MAX_HEALTH, 1.0D)
+                .add(EntityAttributes.KNOCKBACK_RESISTANCE, 1.0D); // So it doesn't get pushed around
     }
 
-    @Override
+     
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this, "core_controller", 0, event -> {
+        controllers.add(new AnimationController<>("core_controller", 0, event -> {
             // Must match the exact name from the JSON!
             return event.setAndContinue(RawAnimation.begin().thenLoop("floties"));
         }));
     }
 
-    @Override
+     
     public void onDeath(net.minecraft.entity.damage.DamageSource damageSource) {
         super.onDeath(damageSource);
-        World world = this.getWorld();
+        World world = this.getEntityWorld();
 
-        if (!world.isClient && world instanceof ServerWorld serverWorld) {
+        if (!world.isClient() && world instanceof ServerWorld serverWorld) {
 
             BlockPos pos = this.getBlockPos();
 
@@ -72,7 +72,7 @@ public class GodEyeCoreEntity extends HostileEntity implements GeoEntity {
 
                 // We must cast the base PlayerEntity to a ServerPlayerEntity to set the spawn!
                 if (arenaPlayer instanceof ServerPlayerEntity serverPlayer) {
-                    serverPlayer.setSpawnPoint(serverWorld.getRegistryKey(), pos, 0.0f, true, false);
+                    // serverPlayer.setSpawnPoint(serverWorld.getRegistryKey(), pos, 0.0f, true, false);
                 }
             }
 
@@ -80,7 +80,7 @@ public class GodEyeCoreEntity extends HostileEntity implements GeoEntity {
             world.playSound(null, pos, net.minecraft.sound.SoundEvents.ENTITY_LIGHTNING_BOLT_THUNDER, net.minecraft.sound.SoundCategory.MASTER, 2.0f, 0.5f);
 
             // 4. Spawn the Boss high up in the air (Y + 15) so it starts hovering
-            GodEyeBossEntity boss = com.carlo.Godeye.GODEYE_BOSS.create(serverWorld);
+            GodEyeBossEntity boss = com.carlo.Godeye.GODEYE_BOSS.create(serverWorld, net.minecraft.entity.SpawnReason.EVENT);
             if (boss != null) {
                 boss.refreshPositionAndAngles(this.getX(), this.getY() + 15.0, this.getZ(), this.getYaw(), this.getPitch());
                 boss.setPersistent(); // <-- THIS PREVENTS DESPAWNING
@@ -89,12 +89,12 @@ public class GodEyeCoreEntity extends HostileEntity implements GeoEntity {
         }
     }
 
-    @Override
+     
     public AnimatableInstanceCache getAnimatableInstanceCache() {
         return cache;
     }
 
-    @Override
+     
     public boolean handleFallDamage(float fallDistance, float damageMultiplier, net.minecraft.entity.damage.DamageSource damageSource) {
         return false; // The Core will no longer shatter from hitting the ground
     }
@@ -104,24 +104,19 @@ public class GodEyeCoreEntity extends HostileEntity implements GeoEntity {
 
         // Helper to quickly enchant items
         ItemStack helmet = new ItemStack(Items.DIAMOND_HELMET);
-        helmet.addEnchantment(Enchantments.PROTECTION, 4);
-        helmet.addEnchantment(Enchantments.UNBREAKING, 3);
+
 
         ItemStack chest = new ItemStack(Items.DIAMOND_CHESTPLATE);
-        chest.addEnchantment(Enchantments.PROTECTION, 4);
-        chest.addEnchantment(Enchantments.UNBREAKING, 3);
+
 
         ItemStack legs = new ItemStack(Items.DIAMOND_LEGGINGS);
-        legs.addEnchantment(Enchantments.PROTECTION, 4);
-        legs.addEnchantment(Enchantments.UNBREAKING, 3);
+
 
         ItemStack boots = new ItemStack(Items.DIAMOND_BOOTS);
-        boots.addEnchantment(Enchantments.PROTECTION, 4);
-        boots.addEnchantment(Enchantments.FEATHER_FALLING, 4);
+
 
         ItemStack sword = new ItemStack(Items.NETHERITE_SWORD);
-        sword.addEnchantment(Enchantments.SHARPNESS, 5);
-        sword.addEnchantment(Enchantments.UNBREAKING, 3);
+
 
         // Equip Armor & Weapons
         player.equipStack(EquipmentSlot.HEAD, helmet);
@@ -157,3 +152,4 @@ public class GodEyeCoreEntity extends HostileEntity implements GeoEntity {
         }
     }
 }
+

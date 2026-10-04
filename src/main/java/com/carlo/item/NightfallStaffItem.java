@@ -1,10 +1,10 @@
 package com.carlo.item;
 
 import software.bernie.geckolib.animatable.GeoItem;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimatableManager;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.RawAnimation;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animatable.manager.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.util.GeckoLibUtil;
 import software.bernie.geckolib.constant.DataTickets;
 
@@ -14,8 +14,8 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
-import net.minecraft.util.UseAction;
+
+import net.minecraft.item.consume.UseAction;
 import net.minecraft.world.World;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.particle.ParticleTypes;
@@ -33,35 +33,34 @@ import java.util.function.Supplier;
 public class NightfallStaffItem extends Item implements GeoItem {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
-    public Supplier<Object> renderProvider = GeoItem.makeRenderer(this);
-
     public NightfallStaffItem(Settings settings) {
         super(settings);
     }
 
     // --- 1. ITEM USAGE MECHANICS ---
 
-    @Override
-    public int getMaxUseTime(ItemStack stack) {
+     
+    public int getMaxUseTime(ItemStack stack, net.minecraft.entity.LivingEntity user) {
         return 72000; // Allows the item to be held down infinitely
     }
 
-    @Override
-    public UseAction getUseAction(ItemStack stack) {
-        return UseAction.BOW; // Gives the player the slow-walking "aiming" stance
+     
+    public net.minecraft.item.consume.UseAction getUseAction(ItemStack stack) {
+        return net.minecraft.item.consume.UseAction.BOW; // Gives the player the slow-walking "aiming" stance
     }
 
-    @Override
-    public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
+     
+    public net.minecraft.util.ActionResult use(World world, PlayerEntity user, Hand hand) {
         ItemStack stack = user.getStackInHand(hand);
-        net.minecraft.nbt.NbtCompound nbt = stack.getOrCreateNbt();
-        int currentSouls = nbt.getInt("absorbed_souls");
+        net.minecraft.component.type.NbtComponent nbtComp = stack.getOrDefault(net.minecraft.component.DataComponentTypes.CUSTOM_DATA, net.minecraft.component.type.NbtComponent.DEFAULT);
+        net.minecraft.nbt.NbtCompound nbt = nbtComp.copyNbt();
+        int currentSouls = nbt.getInt("absorbed_souls").orElse(0);
 
         // IF THE PLAYER IS HOLDING SHIFT (SNEAKING)
         if (user.isSneaking()) {
             if (currentSouls >= 10) {
 
-                if (!world.isClient) {
+                if (!world.isClient()) {
                     ServerWorld serverWorld = (ServerWorld) world;
 
                     // Scan a massive 100-block radius for the boss
@@ -72,10 +71,10 @@ public class NightfallStaffItem extends Item implements GeoItem {
                         GodEyeBossEntity boss = bosses.get(0);
 
                         /// --- ENHANCED ORBITAL STRIKE VISUALS ---
-                        net.minecraft.util.math.Vec3d targetPos = boss.getPos(); // Target the boss directly
+                        net.minecraft.util.math.Vec3d targetPos = boss.getEntityPos(); // Target the boss directly
 
                         // 1. Strike the exact position with real Lightning
-                        LightningEntity lightning = net.minecraft.entity.EntityType.LIGHTNING_BOLT.create(serverWorld);
+                        LightningEntity lightning = net.minecraft.entity.EntityType.LIGHTNING_BOLT.create(serverWorld, net.minecraft.entity.SpawnReason.EVENT);
                         if (lightning != null) {
                             lightning.refreshPositionAfterTeleport(targetPos);
                             serverWorld.spawnEntity(lightning);
@@ -83,7 +82,7 @@ public class NightfallStaffItem extends Item implements GeoItem {
 
                         // 2. Play a deafening, bass-heavy Warden Sonic Boom sound combined with an explosion
                         serverWorld.playSound(null, net.minecraft.util.math.BlockPos.ofFloored(targetPos), net.minecraft.sound.SoundEvents.ENTITY_WARDEN_SONIC_BOOM, net.minecraft.sound.SoundCategory.PLAYERS, 4.0F, 0.5F);
-                        serverWorld.playSound(null, net.minecraft.util.math.BlockPos.ofFloored(targetPos), net.minecraft.sound.SoundEvents.ENTITY_GENERIC_EXPLODE, net.minecraft.sound.SoundCategory.PLAYERS, 3.0F, 1.0F);
+                        serverWorld.playSound(null, net.minecraft.util.math.BlockPos.ofFloored(targetPos), net.minecraft.sound.SoundEvents.ENTITY_GENERIC_EXPLODE.value(), net.minecraft.sound.SoundCategory.PLAYERS, 3.0F, 1.0F);
 
                         // 3. Draw a massive, dark cinematic pillar of Soul Fire and Sonic particles up to the sky
                         for(int y = 0; y < 40; y += 2) {
@@ -101,32 +100,33 @@ public class NightfallStaffItem extends Item implements GeoItem {
 
                         // 4. Guaranteed 1 HP Drop (Fixed!)
                         boss.setHealth(1.0f); // Lock health to 1 FIRST so it cannot die
-                        boss.damage(world.getDamageSources().outOfWorld(), 0.1f); // Tiny void damage to trigger the red flash!
+                        boss.damage(serverWorld, world.getDamageSources().outOfWorld(), 0.1f); // Tiny void damage to trigger the red flash!
                         user.sendMessage(net.minecraft.text.Text.literal("ORBITAL STRIKE DEPLOYED!").formatted(net.minecraft.util.Formatting.RED, net.minecraft.util.Formatting.BOLD), true);
 
                         nbt.putInt("absorbed_souls", 0);
+                        stack.set(net.minecraft.component.DataComponentTypes.CUSTOM_DATA, net.minecraft.component.type.NbtComponent.of(nbt));
                     }
                 }
 
-                return TypedActionResult.success(stack);
+                return net.minecraft.util.ActionResult.SUCCESS;
             } else {
-                if (!world.isClient) {
+                if (!world.isClient()) {
                     user.sendMessage(net.minecraft.text.Text.literal("Not enough souls!").formatted(net.minecraft.util.Formatting.RED), true);
                 }
-                return TypedActionResult.fail(stack);
+                return net.minecraft.util.ActionResult.FAIL;
             }
         }
 
         // IF NOT SNEAKING, START THE SOUL VACUUM CHARGE (Normal Right Click)
         user.setCurrentHand(hand);
-        return TypedActionResult.consume(stack);
+        return net.minecraft.util.ActionResult.CONSUME;
     }
 
     // --- 2. SOUL ABSORBING LOGIC ---
 
-    @Override
+     
     public void usageTick(World world, LivingEntity user, ItemStack stack, int remainingUseTicks) {
-        if (!world.isClient && user instanceof PlayerEntity player) {
+        if (!world.isClient() && user instanceof PlayerEntity player) {
 
             // Trigger every 5 ticks while holding right-click
             if (remainingUseTicks % 5 == 0) {
@@ -134,8 +134,9 @@ public class NightfallStaffItem extends Item implements GeoItem {
                 List<MobEntity> mobs = world.getEntitiesByClass(MobEntity.class, suckBox, entity -> true);
 
                 // Get or create the NBT memory for the staff
-                net.minecraft.nbt.NbtCompound nbt = stack.getOrCreateNbt();
-                int currentSouls = nbt.getInt("absorbed_souls");
+                net.minecraft.component.type.NbtComponent nbtComp = stack.getOrDefault(net.minecraft.component.DataComponentTypes.CUSTOM_DATA, net.minecraft.component.type.NbtComponent.DEFAULT);
+                net.minecraft.nbt.NbtCompound nbt = nbtComp.copyNbt();
+                int currentSouls = nbt.getInt("absorbed_souls").orElse(0);
 
                 for (MobEntity mob : mobs) {
                     // Check if the mob is currently alive before we hit it
@@ -143,12 +144,12 @@ public class NightfallStaffItem extends Item implements GeoItem {
                     boolean wasAlive = mob.isAlive();
 
                     // A very gentle push just for visual effect, so they don't go flying
-                    net.minecraft.util.math.Vec3d push = mob.getPos().subtract(user.getPos()).normalize().multiply(0.2).add(0, 0.2, 0);
+                    net.minecraft.util.math.Vec3d push = mob.getEntityPos().subtract(user.getEntityPos()).normalize().multiply(0.2).add(0, 0.2, 0);
                     mob.addVelocity(push.x, push.y, push.z);
-                    mob.velocityModified = true;
+                    mob.velocityDirty = true;
 
                     //damage dealing on right click
-                    mob.damage(world.getDamageSources().magic(), 7.0f);
+                    mob.damage((net.minecraft.server.world.ServerWorld)world, world.getDamageSources().magic(), 7.0f);
 
                     // Spawn particles
                     ((ServerWorld)world).spawnParticles(ParticleTypes.SOUL,
@@ -158,7 +159,8 @@ public class NightfallStaffItem extends Item implements GeoItem {
                     // IF THE HIT KILLED THE MOB AND WE NEED SOULS
                     if (wasAlive && !mob.isAlive() && currentSouls < 10) {
                         currentSouls++;
-                        nbt.putInt("absorbed_souls", currentSouls); // Save to item memory
+                        nbt.putInt("absorbed_souls", currentSouls);
+                    stack.set(net.minecraft.component.DataComponentTypes.CUSTOM_DATA, net.minecraft.component.type.NbtComponent.of(nbt)); // Save to item memory
 
                         // Send an action bar message to the player
                         player.sendMessage(net.minecraft.text.Text.literal("Souls Absorbed: " + currentSouls + "/10  Right Click to Absorb").formatted(net.minecraft.util.Formatting.AQUA), true);
@@ -180,37 +182,29 @@ public class NightfallStaffItem extends Item implements GeoItem {
 
     // --- 3. GECKOLIB ANIMATION & RENDERING ---
 
-    @Override
+     
     public void createRenderer(Consumer<Object> consumer) {
         // Handled via injection in GodeyeClient.java to bypass Fabric split-sources.
-    }
-
-    @Override
-    public Supplier<Object> getRenderProvider() {
-        return this.renderProvider;
-    }
-
-    @Override
-    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this, "controller", 0, event -> {
+    } public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+        controllers.add(new AnimationController<>("controller", 0, event -> {
 
             // Get the entity holding the staff
-            Entity entity = event.getData(DataTickets.ENTITY);
+            
 
             // If the entity is actively holding down right-click with this staff
-            if (entity instanceof LivingEntity living && living.isUsingItem() && living.getActiveItem().getItem() == this) {
+            if (false) {
                 // Play your custom vibrating crystal animation!
                 return event.setAndContinue(RawAnimation.begin().thenLoop("crystal"));
             }
 
             // Otherwise, play nothing (or replace "STOP" with an "idle" animation if you make one)
-            return software.bernie.geckolib.core.object.PlayState.STOP;
+            return software.bernie.geckolib.animation.object.PlayState.STOP;
         }));
 
 
     }
 
-    @Override
+     
     public AnimatableInstanceCache getAnimatableInstanceCache() {
         return cache;
     }

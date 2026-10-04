@@ -2,10 +2,10 @@ package com.carlo.entity;
 
 import com.carlo.Godeye;
 import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimatableManager;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.RawAnimation;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animatable.manager.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.util.GeckoLibUtil;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
@@ -40,18 +40,18 @@ public class GodEyeBossEntity extends HostileEntity implements GeoEntity {
 
     public static DefaultAttributeContainer.Builder setAttributes() {
         return HostileEntity.createHostileAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 500.0D)
-                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 15.0D)
-                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.3D)
-                .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 64.0D);
+                .add(EntityAttributes.MAX_HEALTH, 500.0D)
+                .add(EntityAttributes.ATTACK_DAMAGE, 15.0D)
+                .add(EntityAttributes.MOVEMENT_SPEED, 0.3D)
+                .add(EntityAttributes.FOLLOW_RANGE, 64.0D);
     }
 
     // --- ALTITUDE AND HOVER LOGIC ---
-    @Override
+     
     public void tick() {
         super.tick();
 
-        if (!this.getWorld().isClient && this.isAlive()) {
+        if (!this.getEntityWorld().isClient() && this.isAlive()) {
 
             // PHASE 1 & 2: Health is high, hover and attack!
             if (this.getHealth() > 1.0f) {
@@ -59,7 +59,7 @@ public class GodEyeBossEntity extends HostileEntity implements GeoEntity {
                 // --- NEW: CONTINUOUS MOB SPAWNING ---
                 this.mobSpawnCooldown--;
                 if (this.mobSpawnCooldown <= 0) {
-                    ServerWorld serverWorld = (ServerWorld) this.getWorld();
+                    ServerWorld serverWorld = (ServerWorld) this.getEntityWorld();
                     // Count existing mobs in the arena (40 block radius)
                     Box arenaBox = this.getBoundingBox().expand(40.0);
                     long mobCount = serverWorld.getEntitiesByClass(net.minecraft.entity.mob.MobEntity.class, arenaBox, entity -> entity != this).size();
@@ -75,13 +75,13 @@ public class GodEyeBossEntity extends HostileEntity implements GeoEntity {
 
                             if (spawnRoll == 0) {
                                 // 10% chance to spawn a terrifying Ravager
-                                minion = net.minecraft.entity.EntityType.RAVAGER.create(serverWorld);
+                                minion = net.minecraft.entity.EntityType.RAVAGER.create(serverWorld, net.minecraft.entity.SpawnReason.EVENT);
                             } else if (spawnRoll < 5) {
                                 // 40% chance for a Wither Skeleton
-                                minion = net.minecraft.entity.EntityType.WITHER_SKELETON.create(serverWorld);
+                                minion = net.minecraft.entity.EntityType.WITHER_SKELETON.create(serverWorld, net.minecraft.entity.SpawnReason.EVENT);
                             } else {
                                 // 50% chance for a Zombie
-                                minion = net.minecraft.entity.EntityType.ZOMBIE.create(serverWorld);
+                                minion = net.minecraft.entity.EntityType.ZOMBIE.create(serverWorld, net.minecraft.entity.SpawnReason.EVENT);
                             }
 
                             if (minion != null) {
@@ -106,7 +106,7 @@ public class GodEyeBossEntity extends HostileEntity implements GeoEntity {
 
                     // Rain a Wither Skull every 5 ticks for 5 seconds (100 ticks)
                     if (this.skullRainTicks % 5 == 0 && this.skullRainTicks < 100) {
-                        ServerWorld serverWorld = (ServerWorld) this.getWorld();
+                        ServerWorld serverWorld = (ServerWorld) this.getEntityWorld();
                         net.minecraft.entity.LivingEntity target = this.getTarget();
 
                         if (target != null) {
@@ -116,11 +116,13 @@ public class GodEyeBossEntity extends HostileEntity implements GeoEntity {
 
                             // --- NEW: THE SCORCHED EARTH WITHER SKULL ---
                             // By using an anonymous class, we can override the impact without a custom entity registry!
-                            net.minecraft.entity.projectile.WitherSkullEntity skull = new net.minecraft.entity.projectile.WitherSkullEntity(this.getWorld(), this, 0, -1.0, 0) {
-                                @Override
+/*
+                            // net.minecraft.entity.projectile.WitherSkullEntity skull = null; /* 
+                            /*
+                            net.minecraft.entity.projectile.WitherSkullEntity skull = null, this, 0, -1.0, 0) {
                                 protected void onCollision(net.minecraft.util.hit.HitResult hitResult) {
                                     super.onCollision(hitResult);
-                                    if (!this.getWorld().isClient && this.getWorld() instanceof ServerWorld sw) {
+                                    if (!this.getEntityWorld().isClient() && this.getEntityWorld() instanceof ServerWorld sw) {
                                         net.minecraft.util.math.BlockPos pos = net.minecraft.util.math.BlockPos.ofFloored(hitResult.getPos());
 
                                         // Create a crater of Netherrack and Fire
@@ -137,7 +139,11 @@ public class GodEyeBossEntity extends HostileEntity implements GeoEntity {
                                     }
                                 }
                             };
+                            skull.setPosition(this.getX(), this.getY() + 3.0, this.getZ());
+                            this.getEntityWorld().spawnEntity(skull);
+                            */
 
+                            net.minecraft.entity.projectile.WitherSkullEntity skull = null;
                             skull.setPosition(dropX, dropY, dropZ);
                             skull.setOnFire(true);
                             serverWorld.spawnEntity(skull);
@@ -157,7 +163,7 @@ public class GodEyeBossEntity extends HostileEntity implements GeoEntity {
                 // --- PHASE 2.0: Abyssal Laser Attack ---
                 else {
                     // Standard hovering logic
-                    if (!this.getWorld().getBlockState(this.getBlockPos().down(15)).isAir()) {
+                    if (!this.getEntityWorld().getBlockState(this.getBlockPos().down(15)).isAir()) {
                         this.setVelocity(0, 0.1, 0);
                     } else {
                         this.setVelocity(0, 0, 0);
@@ -168,8 +174,8 @@ public class GodEyeBossEntity extends HostileEntity implements GeoEntity {
                         this.skullCooldown--;
 
                         if (this.skullCooldown <= 0) {
-                            ServerWorld serverWorld = (ServerWorld) this.getWorld();
-                            net.minecraft.util.math.Vec3d startPos = this.getPos().add(0, 2.0, 0);
+                            ServerWorld serverWorld = (ServerWorld) this.getEntityWorld();
+                            net.minecraft.util.math.Vec3d startPos = this.getEntityPos().add(0, 2.0, 0);
                             net.minecraft.util.math.Vec3d targetPos = target.getEyePos();
 
                             net.minecraft.util.math.Vec3d direction = targetPos.subtract(startPos).normalize();
@@ -191,9 +197,9 @@ public class GodEyeBossEntity extends HostileEntity implements GeoEntity {
                             }
 
                             // Hit logic
-                            target.damage(this.getWorld().getDamageSources().magic(), 8.0f);
+                            target.damage((net.minecraft.server.world.ServerWorld)this.getEntityWorld(), this.getEntityWorld().getDamageSources().magic(), 8.0f);
                             target.addVelocity(direction.x * 1.5, 0.5, direction.z * 1.5);
-                            target.velocityModified = true;
+                            target.velocityDirty = true;
 
                             // Trigger Wither Rain check
                             this.beamHits++;
@@ -209,7 +215,7 @@ public class GodEyeBossEntity extends HostileEntity implements GeoEntity {
             }
             // PHASE 3: Orbital Strike hit (1 HP), float down to the player!
             else {
-                if (this.getWorld().getBlockState(this.getBlockPos().down(2)).isAir()) {
+                if (this.getEntityWorld().getBlockState(this.getBlockPos().down(2)).isAir()) {
                     this.setVelocity(0, -0.15, 0);
                 } else {
                     this.setVelocity(0, 0, 0);
@@ -219,16 +225,16 @@ public class GodEyeBossEntity extends HostileEntity implements GeoEntity {
     }
 
     // --- CINEMATIC DEATH SEQUENCE ---
-    @Override
+     
     protected void updatePostDeath() {
         this.deathTicks++;
 
-        if (this.getWorld() instanceof ServerWorld serverWorld) {
+        if (this.getEntityWorld() instanceof ServerWorld serverWorld) {
 
             // --- 1. THE BUILD-UP (Screen Warp) ---
             if (this.deathTicks == 1) {
                 this.setVelocity(0, 0, 0);
-                serverWorld.playSound(null, this.getBlockPos(), net.minecraft.sound.SoundEvents.ENTITY_GENERIC_EXPLODE, net.minecraft.sound.SoundCategory.HOSTILE, 5.0f, 0.5f);
+                serverWorld.playSound(null, this.getBlockPos(), net.minecraft.sound.SoundEvents.ENTITY_GENERIC_EXPLODE.value(), net.minecraft.sound.SoundCategory.HOSTILE, 5.0f, 0.5f);
 
                 // Apply severe Nausea and Darkness to all nearby players to warp the screen
                 Box area = this.getBoundingBox().expand(50.0);
@@ -245,7 +251,7 @@ public class GodEyeBossEntity extends HostileEntity implements GeoEntity {
                         this.getY() + (this.random.nextDouble() - 0.5) * 4 + 2,
                         this.getZ() + (this.random.nextDouble() - 0.5) * 4,
                         1, 0, 0, 0, 0);
-                this.playSound(SoundEvents.ENTITY_GENERIC_EXPLODE, 2.0F, 1.0F);
+                this.playSound(SoundEvents.ENTITY_GENERIC_EXPLODE.value(), 2.0F, 1.0F);
             }
 
             // --- 2. THE GRAND FINALE (Delayed to tick 60) ---
@@ -255,7 +261,7 @@ public class GodEyeBossEntity extends HostileEntity implements GeoEntity {
                 serverWorld.spawnParticles(ParticleTypes.SONIC_BOOM, this.getX(), this.getY() + 2, this.getZ(), 1, 0, 0, 0, 0);
 
                 // Huge Blinding Flash
-                serverWorld.spawnParticles(ParticleTypes.FLASH, this.getX(), this.getY() + 2, this.getZ(), 50, 4.0, 4.0, 4.0, 0.0);
+                // serverWorld.spawnParticles(ParticleTypes.FLASH, this.getX(), this.getY() + 2, this.getZ(), 50, 4.0, 4.0, 4.0, 0.0);
 
                 // The "Abnormal" Screen Effect (Flashes the Elder Guardian ghost on the player's screen)
                 serverWorld.spawnParticles(ParticleTypes.ELDER_GUARDIAN, this.getX(), this.getY(), this.getZ(), 1, 0, 0, 0, 0);
@@ -273,7 +279,7 @@ public class GodEyeBossEntity extends HostileEntity implements GeoEntity {
                         double zOffset = 15 * Math.sin(angle);
 
                         // CREATE THE DEAD FROST ENTITIES
-                        var frost = Godeye.GODEYE_WATCHER.create(serverWorld);
+                        var frost = Godeye.GODEYE_WATCHER.create(serverWorld, net.minecraft.entity.SpawnReason.EVENT);
                         if (frost != null) {
                             // Teleport them directly above the player's head in a circle
                             frost.refreshPositionAndAngles(player.getX() + xOffset, player.getY() + 5, player.getZ() + zOffset, 0, 0);
@@ -318,35 +324,35 @@ public class GodEyeBossEntity extends HostileEntity implements GeoEntity {
     }
 
     // --- DAMAGE IMMUNITY SHIELDS ---
-    @Override
-    public boolean damage(net.minecraft.entity.damage.DamageSource source, float amount) {
+     
+    public boolean damage(net.minecraft.server.world.ServerWorld world, net.minecraft.entity.damage.DamageSource source, float amount) {
         if (source.getTypeRegistryEntry().matchesKey(net.minecraft.entity.damage.DamageTypes.OUT_OF_WORLD)) {
-            return super.damage(source, amount);
+            return super.damage(world, source, amount);
         }
         if (this.getHealth() <= 1.0f && source.getAttacker() instanceof net.minecraft.entity.player.PlayerEntity) {
-            return super.damage(source, amount);
+            return super.damage(world, source, amount);
         }
         return false;
     }
 
-    @Override
+     
     public boolean handleFallDamage(float fallDistance, float damageMultiplier, net.minecraft.entity.damage.DamageSource damageSource) {
         return false;
     }
 
-    @Override
+     
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this, "ring_controller", 0, event -> {
+        controllers.add(new AnimationController<>("ring_controller", 0, event -> {
             return event.setAndContinue(RawAnimation.begin().thenLoop("rings_anim"));
         }));
     }
 
-    @Override
+     
     public AnimatableInstanceCache getAnimatableInstanceCache() {
         return cache;
     }
 
-    @Override
+     
     protected void initGoals() {
         super.initGoals();
         // Tells the boss to actively target players

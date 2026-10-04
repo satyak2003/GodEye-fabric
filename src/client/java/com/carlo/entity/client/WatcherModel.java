@@ -7,20 +7,17 @@ import net.minecraft.util.Identifier;
 public class WatcherModel extends GeoModel<WatcherEntity> {
 
     @Override
-    public Identifier getModelResource(WatcherEntity object) {
-        // Updated to your new Frost model
-        return new Identifier("godeye", "geo/godeye_frost.geo.json");
+    public Identifier getModelResource(software.bernie.geckolib.renderer.base.GeoRenderState state) {
+        return Identifier.of("godeye", "godeye_watcher");
     }
 
     @Override
-    public Identifier getTextureResource(WatcherEntity object) {
-        // Updated to your new Frost texture
-        return new Identifier("godeye", "textures/entity/frost.png");
+    public Identifier getTextureResource(software.bernie.geckolib.renderer.base.GeoRenderState state) {
+        return Identifier.of("godeye", "textures/entity/watcher.png");
     }
 
     @Override
     public Identifier getAnimationResource(WatcherEntity animatable) {
-        // Updated to your new Frost animation file
-        return new Identifier("godeye", "animations/godeye_frost.animation.json");
+        return Identifier.of("godeye", "godeye_watcher");
     }
 }

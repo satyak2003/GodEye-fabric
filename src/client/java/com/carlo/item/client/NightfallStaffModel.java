@@ -6,17 +6,17 @@ import net.minecraft.util.Identifier;
 
 public class NightfallStaffModel extends GeoModel<NightfallStaffItem> {
     @Override
-    public Identifier getModelResource(NightfallStaffItem object) {
-        return new Identifier("godeye", "geo/godeye_nightfall.geo.json");
+    public Identifier getModelResource(software.bernie.geckolib.renderer.base.GeoRenderState state) {
+        return Identifier.of("godeye", "geo/godeye_nightfall.geo.json");
     }
 
     @Override
-    public Identifier getTextureResource(NightfallStaffItem object) {
-        return new Identifier("godeye", "textures/item/nightfall.png");
+    public Identifier getTextureResource(software.bernie.geckolib.renderer.base.GeoRenderState state) {
+        return Identifier.of("godeye", "textures/item/nightfall.png");
     }
 
     @Override
     public Identifier getAnimationResource(NightfallStaffItem animatable) {
-        return new Identifier("godeye", "animations/godeye_nightfall.animation.json");
+        return Identifier.of("godeye", "animations/godeye_nightfall.animation.json");
     }
 }

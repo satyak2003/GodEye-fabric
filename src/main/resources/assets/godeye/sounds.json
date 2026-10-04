@@ -1,37 +1,16 @@
 {
-  "boss_death": {
-    "sounds": [ "godeye:boss_death" ]
-  },
-  "boss_chance": {
-    "category": "hostile",
-    "sounds": [
-      "godeye:boss_chance"
-    ]
-  },
-  "boss_run": {
-    "category": "hostile",
-    "sounds": [
-      "godeye:boss_run"
-    ]
-  },
-  "your_world": {
-    "sounds": [
-      "godeye:your_world"
-    ]
-  },
-  "jumpscare": {
-    "category": "hostile",
-    "sounds": [
-      "godeye:jumpscare"
-    ]
-  },
-  "bgm_domain": {
-    "category": "master",
-    "sounds": [{"name": "godeye:bgm_domain", "stream": true}]
-  },
-  "bgm_boss": {
-    "category": "master",
-    "sounds": [{"name": "godeye:bgm_boss", "stream": true}]
-  }
+  "boss_death": { "sounds": [ "godeye:boss_death" ] },
+  "boss_chance": { "category": "hostile", "sounds": [ "godeye:boss_chance" ] },
+  "boss_run": { "category": "hostile", "sounds": [ "godeye:boss_run" ] },
+  "your_world": { "sounds": [ "godeye:your_world" ] },
+  "jumpscare": { "category": "hostile", "sounds": [ "godeye:jumpscare" ] },
+  "bgm_domain": { "category": "master", "sounds": [{"name": "godeye:bgm_domain", "stream": true}] },
+  "bgm_boss": { "category": "master", "sounds": [{"name": "godeye:bgm_boss", "stream": true}] },
+  "frost_spawn": { "category": "hostile", "sounds": [ "godeye:frost_appear" ] },
+  "frost_vanish": { "category": "hostile", "sounds": [ "godeye:frost_disappear" ] },
+  "watcher_tp": { "category": "hostile", "sounds": [ "godeye:godeye_watcher_tp" ] },
+  "player_tp": { "category": "player", "sounds": [ "godeye:godeye_player_tp" ] },
+  "ch03_bgm": { "category": "master", "sounds": [{"name": "godeye:godeye_ch03_bgm", "stream": true}] },
+  "witness_encounter_1": { "category": "hostile", "sounds": [{"name": "godeye:witness_encounter_1", "stream": true}] },
+  "godeye_death_scr": { "category": "record", "sounds": ["godeye:godeye_death_scr"] }
 }
-

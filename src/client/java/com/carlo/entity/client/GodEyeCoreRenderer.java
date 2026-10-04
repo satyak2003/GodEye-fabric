@@ -7,18 +7,14 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 
 
-public class GodEyeCoreRenderer extends GeoEntityRenderer<GodEyeCoreEntity> {
+public class GodEyeCoreRenderer extends GeoEntityRenderer<GodEyeCoreEntity, net.minecraft.client.render.entity.state.LivingEntityRenderState> {
     public GodEyeCoreRenderer(EntityRendererFactory.Context renderManager) {
         super(renderManager, new GodEyeCoreModel());
-        this.addRenderLayer(new EmissiveGeoLayer<>(this, new net.minecraft.util.Identifier("godeye", "textures/entity/core_e.png")));
-    }
-    @Override
-    public void render(com.carlo.entity.GodEyeCoreEntity entity, float entityYaw, float partialTick, MatrixStack poseStack, VertexConsumerProvider bufferSource, int packedLight) {
-        poseStack.push();
-        // Scale X, Y, Z. Change 3.0F to whatever size fits your altar perfectly!
-        poseStack.scale(3.0F, 3.0F, 3.0F);
-        super.render(entity, entityYaw, partialTick, poseStack, bufferSource, packedLight);
-        poseStack.pop();
+        this.withScale(2.5f);
+        this.withRenderLayer(new software.bernie.geckolib.renderer.layer.builtin.AutoGlowingGeoLayer<>(this) {
+            protected net.minecraft.util.Identifier getTextureResource(net.minecraft.client.render.entity.state.LivingEntityRenderState state) {
+                return net.minecraft.util.Identifier.of("godeye", "textures/entity/core_e.png");
+            }
+        });
     }
 }
-
