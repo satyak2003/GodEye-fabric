@@ -215,8 +215,12 @@ public class Godeye implements ModInitializer {
                 net.minecraft.util.math.BlockPos safePos = com.carlo.util.SafeSurfacePositionResolver.resolveSafeSurface(targetWorld, state.getDeathPos().getX(), state.getDeathPos().getZ(), 5);
                 if (safePos == null) safePos = state.getDeathPos();
                 
+                System.out.println("[GodEye DEATH] Restoring death location");
                 newPlayer.teleport(targetWorld, safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5, java.util.Set.of(), state.getDeathYaw(), state.getDeathPitch(), true);
                 state.setInvulnerabilityEndTick(targetWorld.getTime() + 200);
+                state.setDeathPos(null);
+                state.setDeathDimension("");
+                System.out.println("[GodEye DEATH] Recovery state cleared");
             }
         });
         ServerTickEvents.END_SERVER_TICK.register(this::onServerTick);
@@ -229,6 +233,7 @@ public class Godeye implements ModInitializer {
         com.carlo.story.event.EventScheduler.tick(server);
     }
 }
+
 
 
 

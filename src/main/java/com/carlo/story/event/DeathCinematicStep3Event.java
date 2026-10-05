@@ -4,6 +4,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import com.carlo.network.BlackScreenPayload;
 import com.carlo.network.CinematicTextPayload;
+import com.carlo.story.system.CinematicLockSystem;
 
 public class DeathCinematicStep3Event implements StoryEvent {
     @Override
@@ -15,15 +16,13 @@ public class DeathCinematicStep3Event implements StoryEvent {
         // Clear text
         net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, new CinematicTextPayload(0));
         
-        if (player.isDead()) {
-            server.getPlayerManager().respawnPlayer(player, false, net.minecraft.entity.Entity.RemovalReason.KILLED);
-            // Re-fetch player since respawn creates a new entity instance!
-            player = server.getPlayerManager().getPlayer(player.getUuid());
-        }
+        // Clear black screen
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, new BlackScreenPayload(false));
         
-        if (player != null) {
-            net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, new BlackScreenPayload(false));
-        }
+        // Unlock controls safely
+        CinematicLockSystem.unlockPlayer(player);
+        
+        System.out.println("[GodEye DEATH] Death recovery cinematic ended");
     }
 }
 

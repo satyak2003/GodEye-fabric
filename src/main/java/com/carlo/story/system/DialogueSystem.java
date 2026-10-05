@@ -7,6 +7,10 @@ public class DialogueSystem {
     public static void send(ServerPlayerEntity player, String speaker, String message) {
         if (player == null) return;
         
+        if (speaker.startsWith("<") && speaker.endsWith(">")) {
+            speaker = speaker.substring(1, speaker.length() - 1);
+        }
+        
         if (message.isEmpty()) {
             player.sendMessage(Text.literal(String.format("<%s> ", speaker)), false);
         } else {

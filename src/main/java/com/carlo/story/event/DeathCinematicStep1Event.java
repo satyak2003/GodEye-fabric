@@ -13,10 +13,14 @@ public class DeathCinematicStep1Event implements StoryEvent {
     @Override
     public void execute(MinecraftServer server, ScheduledEvent eventData, ServerPlayerEntity player) {
         if (player == null) return;
-        // Turn screen black
-        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, new BlackScreenPayload(true));
         
-        // Wait 1 second before text
-        EventScheduler.schedule(server, new ScheduledEvent("death_seq_2_" + player.getUuidAsString(), "godeye_death_step_2", player.getEntityWorld().getTime() + 20, "system", java.util.Optional.of(player.getUuid()), "", false));
+        if (player.isDead()) {
+            server.getPlayerManager().respawnPlayer(player, false, net.minecraft.entity.Entity.RemovalReason.KILLED);
+            player = server.getPlayerManager().getPlayer(player.getUuid());
+            System.out.println("[GodEye DEATH] Player respawned");
+        }
+        
+        // Wait briefly after respawn to let client catch up before applying cinematic locks/visuals
+        EventScheduler.schedule(server, new ScheduledEvent("death_seq_2_" + player.getUuidAsString(), "godeye_death_step_2", player.getEntityWorld().getTime() + 10, "system", java.util.Optional.of(player.getUuid()), "", false));
     }
 }
