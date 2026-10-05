@@ -131,6 +131,9 @@ public class Godeye implements ModInitializer {
         com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH04FrostSpawnEvent());
         com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH04WitnessStartEvent());
         com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH04WitnessSpawnEvent());
+        com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH04WitnessTurnEvent());
+        com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH04PlayerFreezeEvent());
+        com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH04PlayerUnfreezeEvent());
         com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH04WitnessApproachEvent());
         com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH04WitnessDarknessEvent());
         com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH04DialogueEvent());
@@ -160,6 +163,44 @@ public class Godeye implements ModInitializer {
         Registry.register(Registries.SOUND_EVENT, VOICE_CHANCE_ID, VOICE_CHANCE_EVENT);
 
         com.carlo.command.GodeyeCommands.register();
+        net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
+            if (!world.isClient() && player instanceof net.minecraft.server.network.ServerPlayerEntity sp) {
+                String activeChap = com.carlo.story.GlobalWorldState.getServerState(world.getServer()).getActiveChapterId();
+                if ("ch04".equals(activeChap)) {
+                    net.minecraft.block.BlockState state = world.getBlockState(hitResult.getBlockPos());
+                    if (state.isIn(net.minecraft.registry.tag.BlockTags.BEDS)) {
+                        System.out.println("[GodEye CH04] Bed interaction anomaly triggered at " + hitResult.getBlockPos().getX() + " " + hitResult.getBlockPos().getY() + " " + hitResult.getBlockPos().getZ());
+                        net.minecraft.block.enums.BedPart part = state.get(net.minecraft.block.BedBlock.PART);
+                        net.minecraft.util.math.Direction dir = state.get(net.minecraft.block.BedBlock.FACING);
+                        net.minecraft.util.math.BlockPos headPos = part == net.minecraft.block.enums.BedPart.HEAD ? hitResult.getBlockPos() : hitResult.getBlockPos().offset(dir);
+                        net.minecraft.util.math.BlockPos footPos = part == net.minecraft.block.enums.BedPart.HEAD ? hitResult.getBlockPos().offset(dir.getOpposite()) : hitResult.getBlockPos();
+                        
+                        world.removeBlock(headPos, false);
+                        world.removeBlock(footPos, false);
+                        world.syncWorldEvent(player, net.minecraft.world.WorldEvents.BLOCK_BROKEN, headPos, net.minecraft.block.Block.getRawIdFromState(state));
+                        world.syncWorldEvent(player, net.minecraft.world.WorldEvents.BLOCK_BROKEN, footPos, net.minecraft.block.Block.getRawIdFromState(state));
+                        return net.minecraft.util.ActionResult.CONSUME;
+                    }
+                }
+            }
+            return net.minecraft.util.ActionResult.PASS;
+        });
+
+        net.fabricmc.fabric.api.event.player.UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
+            if (!world.isClient() && player instanceof net.minecraft.server.network.ServerPlayerEntity sp) {
+                String activeChap = com.carlo.story.GlobalWorldState.getServerState(world.getServer()).getActiveChapterId();
+                if ("ch04".equals(activeChap)) {
+                    if (entity instanceof net.minecraft.entity.passive.VillagerEntity) {
+                        System.out.println("[GodEye CH04] Villager interaction anomaly triggered entity=" + entity.getUuidAsString());
+                        ((net.minecraft.server.world.ServerWorld)world).spawnParticles(net.minecraft.particle.ParticleTypes.POOF, entity.getX(), entity.getY()+1, entity.getZ(), 20, 0.5, 0.5, 0.5, 0.05);
+                        entity.discard();
+                        return net.minecraft.util.ActionResult.CONSUME;
+                    }
+                }
+            }
+            return net.minecraft.util.ActionResult.PASS;
+        });
+
 
         net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents.ALLOW_DEATH.register((player, source, amount) -> {
             com.carlo.story.system.DeathSystem.onPlayerDeath(player);
@@ -188,6 +229,8 @@ public class Godeye implements ModInitializer {
         com.carlo.story.event.EventScheduler.tick(server);
     }
 }
+
+
 
 
 

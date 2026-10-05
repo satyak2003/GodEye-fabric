@@ -79,8 +79,11 @@ public class CinematicLockSystem {
             if (targetId != null && targetId != -1) {
                 Entity target = ((net.minecraft.server.world.ServerWorld)player.getEntityWorld()).getEntityById(targetId);
                 if (target == null || target.isRemoved() || !target.isAlive()) {
+                    boolean wasJumpscare = PlayerStoryState.getState(player).getFlag("ch02_jumpscare_active");
                     unlockPlayer(player, "target entity missing or removed");
-                    PlayerStoryState.getState(player).setFlag("ch02_completed", true);
+                    if (wasJumpscare) {
+                        PlayerStoryState.getState(player).setFlag("ch02_completed", true);
+                    }
                 }
             }
         }

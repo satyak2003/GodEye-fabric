@@ -26,7 +26,13 @@ public class CH04PlayerFreezeEvent implements StoryEvent {
         // The max is 140 before damage starts. The scale starts rendering when it goes above 0, fully frosted at 140.
         int seconds = 12 + world.random.nextInt(9); // 12 to 20 seconds
         int frozenTicksTarget = seconds * 20 * 2;
+        
+        System.out.println("[GodEye CH04] Player freeze event executing");
+        System.out.println("[GodEye CH04] frozenTicks before=" + player.getFrozenTicks());
+        
         player.setFrozenTicks(frozenTicksTarget);
+        
+        System.out.println("[GodEye CH04] frozenTicks set=" + player.getFrozenTicks());
         
         // Schedule next random freeze
         long nextDelay = 20 * (60 + world.random.nextInt(120)); // 1-3 minutes

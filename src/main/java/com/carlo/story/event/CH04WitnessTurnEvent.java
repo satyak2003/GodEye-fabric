@@ -36,6 +36,8 @@ public class CH04WitnessTurnEvent implements StoryEvent {
                 // Start approaching
                 EventScheduler.schedule(server, new ScheduledEvent("ch04_wit_app_" + player.getUuidAsString(), "ch04_witness_approach", world.getTime() + 20, "ch04", Optional.of(player.getUuid()), eventData.payload(), false));
             }
-        } catch(Exception ignored){}
+        } catch(Exception e) {
+            System.err.println("[GodEye CH04 ERROR] Witness turn failed: " + e.getMessage());
+        }
     }
 }

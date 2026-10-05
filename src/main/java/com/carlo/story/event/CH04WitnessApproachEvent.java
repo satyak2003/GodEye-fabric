@@ -67,38 +67,40 @@ public class CH04WitnessApproachEvent implements StoryEvent {
                 if (dist <= 3.0 || ticksActive > 700 || stallCount >= 3) {
                     EventScheduler.schedule(server, new ScheduledEvent("ch04_wit_dark_" + player.getUuidAsString(), "ch04_witness_darkness", world.getTime(), "ch04", Optional.of(player.getUuid()), witnessUuid, false));
                 } else {
-                    net.minecraft.util.math.Vec3d forward = net.minecraft.util.math.Vec3d.fromPolar(0, yaw).multiply(0.05);
+                    net.minecraft.util.math.Vec3d forward = net.minecraft.util.math.Vec3d.fromPolar(0, yaw).multiply(0.1);
                     double newX = witness.getX() + forward.x;
                     double newZ = witness.getZ() + forward.z;
-                    double newY = witness.getY();
                     
-                    BlockPos checkPos = BlockPos.ofFloored(newX, newY, newZ);
+                    // Probe target position for a surface
+                    BlockPos targetBasePos = BlockPos.ofFloored(newX, witness.getY(), newZ);
                     boolean foundGround = false;
+                    double targetY = witness.getY();
+                    
                     for (int yOffset = 2; yOffset >= -2; yOffset--) {
-                        BlockPos pos = checkPos.up(yOffset);
+                        BlockPos pos = targetBasePos.up(yOffset);
                         if (world.getBlockState(pos).isSolidBlock(world, pos) && !world.getBlockState(pos.up()).isSolidBlock(world, pos.up())) {
-                            newY = pos.getY() + 1.0;
+                            targetY = pos.getY() + 1.0;
                             foundGround = true;
                             break;
                         }
                     }
                     
-                    double targetY = foundGround ? newY : witness.getY();
-                    if (witness.getY() < targetY) {
-                        newY = Math.min(targetY, witness.getY() + 0.15); // Step up
-                    } else if (witness.getY() > targetY) {
-                        newY = Math.max(targetY, witness.getY() - 0.15); // Step down
-                    } else {
-                        newY = witness.getY();
+                    double newY = witness.getY();
+                    if (foundGround) {
+                        if (witness.getY() < targetY) {
+                            newY = Math.min(targetY, witness.getY() + 0.2); // Climb
+                        } else if (witness.getY() > targetY) {
+                            newY = Math.max(targetY, witness.getY() - 0.2); // Descend
+                        }
                     }
-                    witness.setPosition(newX, newY, newZ);
                     
-                    int minX = net.minecraft.util.math.MathHelper.floor(witness.getX() - 1.0);
-                    int maxX = net.minecraft.util.math.MathHelper.ceil(witness.getX() + 1.0);
-                    int minY = net.minecraft.util.math.MathHelper.floor(witness.getY());
-                    int maxY = net.minecraft.util.math.MathHelper.ceil(witness.getY() + 2.5);
-                    int minZ = net.minecraft.util.math.MathHelper.floor(witness.getZ() - 1.0);
-                    int maxZ = net.minecraft.util.math.MathHelper.ceil(witness.getZ() + 1.0);
+                    // Targeted block breaking (only blocks immediately obstructing the forward bounding box)
+                    int minX = net.minecraft.util.math.MathHelper.floor(newX - 0.5);
+                    int maxX = net.minecraft.util.math.MathHelper.floor(newX + 0.5);
+                    int minZ = net.minecraft.util.math.MathHelper.floor(newZ - 0.5);
+                    int maxZ = net.minecraft.util.math.MathHelper.floor(newZ + 0.5);
+                    int minY = net.minecraft.util.math.MathHelper.floor(newY + 0.1); // Avoid breaking the ground we walk on
+                    int maxY = net.minecraft.util.math.MathHelper.ceil(newY + 2.5); // Witness height
                     
                     for (int bx = minX; bx <= maxX; bx++) {
                         for (int by = minY; by <= maxY; by++) {
@@ -114,6 +116,8 @@ public class CH04WitnessApproachEvent implements StoryEvent {
                         }
                     }
 
+                    witness.setPosition(newX, newY, newZ);
+                    
                     String newData = ticksActive + ";" + stallCount + ";" + lastX + ";" + lastY + ";" + lastZ;
                     String newPayload = witnessUuid + "|" + newData;
                     EventScheduler.schedule(server, new ScheduledEvent("ch04_wit_app_" + player.getUuidAsString(), "ch04_witness_approach", world.getTime() + 1, "ch04", Optional.of(player.getUuid()), newPayload, false));
@@ -126,7 +130,9 @@ public class CH04WitnessApproachEvent implements StoryEvent {
                 com.carlo.story.PlayerStoryState.getState(player).setFlag("cinematic_locked", false);
                 net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, new CinematicLockPayload(false));
             }
-        } catch(Exception ignored){}
+        } catch(Exception e) {
+            System.err.println("[GodEye CH04 ERROR] Witness approach failed: " + e.getMessage());
+        }
     }
 }
 
