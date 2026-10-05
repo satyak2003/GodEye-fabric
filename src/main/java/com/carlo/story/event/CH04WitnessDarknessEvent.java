@@ -39,11 +39,14 @@ public class CH04WitnessDarknessEvent implements StoryEvent {
         // Restore controls
         ServerPlayNetworking.send(player, new CameraLockPayload(false, 0));
         ServerPlayNetworking.send(player, new ControlLockPayload(false));
+        com.carlo.story.PlayerStoryState.getState(player).setFlag("cinematic_locked", false);
         ServerPlayNetworking.send(player, new CinematicLockPayload(false));
         
         // Start dialogue
         EventScheduler.schedule(server, new ScheduledEvent("ch04_dial_1_" + player.getUuidAsString(), "ch04_dialogue", world.getTime() + 40, "ch04", Optional.of(player.getUuid()), "1", false));
     }
 }
+
+
 
 

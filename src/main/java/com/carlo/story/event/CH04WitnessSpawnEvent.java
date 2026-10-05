@@ -26,6 +26,7 @@ public class CH04WitnessSpawnEvent implements StoryEvent {
         if (pState.getFlag("ch04_completed")) return;
         
         ServerWorld world = (ServerWorld) player.getEntityWorld();
+        if (player.getFrozenTicks() > 0) player.setFrozenTicks(0);
         
         // Spawn Witness 10-15 blocks away, visible, in front of player
         float angle = player.getYaw();
@@ -49,8 +50,8 @@ public class CH04WitnessSpawnEvent implements StoryEvent {
         
         world.spawnEntity(witness);
         
-        ServerPlayNetworking.send(player, new CameraLockPayload(true, witness.getId()));
-        ServerPlayNetworking.send(player, new CinematicLockPayload(true));
+        pState.setFlag("ch04_witness_active", true);
+        com.carlo.story.system.CinematicLockSystem.applyLock(player, true, true, witness.getId());
         
         // Start playing the sound!
         com.carlo.story.system.SoundHelper.playToPlayer(player, net.minecraft.registry.Registries.SOUND_EVENT.get(net.minecraft.util.Identifier.of("godeye", "witness_encounter_1")), net.minecraft.sound.SoundCategory.HOSTILE, 1.0f, 1.0f);
@@ -62,4 +63,7 @@ public class CH04WitnessSpawnEvent implements StoryEvent {
         EventScheduler.schedule(server, new ScheduledEvent("ch04_wit_turn_" + player.getUuidAsString(), "ch04_witness_turn", world.getTime() + 40, "ch04", Optional.of(player.getUuid()), witness.getUuidAsString(), false));
     }
 }
+
+
+
 

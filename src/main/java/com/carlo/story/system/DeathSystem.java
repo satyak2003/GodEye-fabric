@@ -20,19 +20,19 @@ public class DeathSystem {
         
         // Clean up any active cinematics
         if (state.getFlag("ch04_witness_active")) {
-            state.setFlag("ch04_witness_active", false);
             player.networkHandler.sendPacket(new net.minecraft.network.packet.s2c.play.StopSoundS2CPacket(net.minecraft.util.Identifier.of("godeye", "witness_encounter_1"), net.minecraft.sound.SoundCategory.HOSTILE));
-            net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, new com.carlo.network.CameraLockPayload(false, 0));
-            net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, new com.carlo.network.ControlLockPayload(false));
-            net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, new com.carlo.network.CinematicLockPayload(false));
+            com.carlo.story.system.CinematicLockSystem.unlockPlayer(player);
             player.removeStatusEffect(net.minecraft.entity.effect.StatusEffects.DARKNESS);
+            net.minecraft.util.math.Box box = new net.minecraft.util.math.Box(player.getBlockPos()).expand(50);
+            java.util.List<com.carlo.entity.WitnessEntity> mobs = ((net.minecraft.server.world.ServerWorld)player.getEntityWorld()).getEntitiesByClass(com.carlo.entity.WitnessEntity.class, box, e -> true);
+            for (com.carlo.entity.WitnessEntity witness : mobs) { witness.discard(); }
         }
         
         // Start death cinematic sequence
         EventScheduler.schedule(((ServerWorld)player.getEntityWorld()).getServer(), new ScheduledEvent(
             "death_seq_1_" + player.getUuidAsString(),
             "godeye_death_step_1",
-            player.getEntityWorld().getTime() + 10, // Wait half a second before blacking out
+            player.getEntityWorld().getTime() + 10,
             "system",
             Optional.of(player.getUuid()),
             "",
@@ -40,5 +40,4 @@ public class DeathSystem {
         ));
     }
 }
-
 

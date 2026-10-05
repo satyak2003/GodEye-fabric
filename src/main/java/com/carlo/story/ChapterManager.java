@@ -11,7 +11,19 @@ public class ChapterManager {
         GlobalWorldState state = GlobalWorldState.getServerState(server);
         String activeId = state.getActiveChapterId();
         
-                Chapter chapter = ChapterRegistry.get(activeId);
+        if (!state.getFlag("world_initialized")) {
+            Chapter initial = ChapterRegistry.get(activeId);
+            System.out.println("[GodEye DEBUG] Initial chapter lookup: " + activeId + " -> " + (initial != null ? initial.getClass().getName() : "null"));
+            
+            if (initial != null) {
+                initial.onStart(server);
+                state.setFlag("world_initialized", true);
+            } else {
+                System.err.println("[GodEye ERROR] ChapterRegistry missing initial chapter: " + activeId + ". Cannot complete world initialization!");
+            }
+        }
+        
+        Chapter chapter = ChapterRegistry.get(activeId);
         if (chapter != null) {
             chapter.tick(server);
             
@@ -34,7 +46,7 @@ public class ChapterManager {
         }
     }
     
-        public static void startNormalTransition(MinecraftServer server, String nextId) {
+    public static void startNormalTransition(MinecraftServer server, String nextId) {
         GlobalWorldState state = GlobalWorldState.getServerState(server);
         String currentId = state.getActiveChapterId();
         
@@ -45,9 +57,14 @@ public class ChapterManager {
         
         state.setActiveChapterId(nextId);
         
-        System.out.println("[GodEye Chapter] Starting chapter: " + nextId);
         Chapter next = ChapterRegistry.get(nextId);
+        System.out.println("[GodEye DEBUG] Transition:");
+        System.out.println("old=" + currentId);
+        System.out.println("next=" + nextId);
+        System.out.println("nextChapterResolved=" + (next != null));
+        
         if (next != null) {
+            System.out.println("[GodEye DEBUG] " + nextId + ".onStart() ENTER");
             next.onStart(server);
             
             // Count events for the new chapter
@@ -57,8 +74,7 @@ public class ChapterManager {
                     nextEvents++;
                 }
             }
-            System.out.println("[GodEye Chapter] " + nextId.toUpperCase() + " onStart completed.");
-            System.out.println("[GodEye Chapter] Scheduled events: " + nextEvents);
+            System.out.println("[GodEye DEBUG] " + nextId + ".onStart() scheduled events=" + nextEvents);
         }
     }
     
@@ -81,7 +97,7 @@ public class ChapterManager {
             state.getGlobalFlags().remove(key);
         }
         
-                for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             PlayerStoryState pState = PlayerStoryState.getState(player);
             List<String> pKeys = new ArrayList<>();
             for (String key : pState.getFlags().keySet()) {
@@ -104,7 +120,3 @@ public class ChapterManager {
         }
     }
 }
-
-
-
-

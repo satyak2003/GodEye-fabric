@@ -37,6 +37,9 @@ public class WatcherEntity extends HostileEntity implements GeoEntity {
             if (this.lifespan != -1) {
                 this.lifespan--;
                 if (this.lifespan <= 0) {
+                    for (net.minecraft.server.network.ServerPlayerEntity p : net.fabricmc.fabric.api.networking.v1.PlayerLookup.tracking(this)) {
+                        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(p, new com.carlo.network.DisappearanceParticlePayload(this.getX(), this.getY(), this.getZ(), false));
+                    }
                     this.discard();
                 }
             }
@@ -97,6 +100,7 @@ public class WatcherEntity extends HostileEntity implements GeoEntity {
         return cache;
     }
 }
+
 
 
 

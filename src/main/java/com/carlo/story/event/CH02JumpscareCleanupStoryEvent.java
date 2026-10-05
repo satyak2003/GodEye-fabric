@@ -1,11 +1,8 @@
 package com.carlo.story.event;
 
-import com.carlo.network.CameraLockPayload;
-import com.carlo.network.ControlLockPayload;
 import com.carlo.story.PlayerStoryState;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import com.carlo.story.system.CinematicLockSystem;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -25,24 +22,21 @@ public class CH02JumpscareCleanupStoryEvent implements StoryEvent {
         
         // Remove Frost
         try {
-            UUID frostUuid = UUID.fromString(eventData.payload());
-            Entity frost = world.getEntity(frostUuid);
-            if (frost != null) {
-					frost.setNoGravity(false);
-                frost.discard();
+            if (eventData != null && eventData.payload() != null && !eventData.payload().isEmpty()) {
+                UUID frostUuid = UUID.fromString(eventData.payload());
+                Entity frost = world.getEntity(frostUuid);
+                if (frost != null) {
+                    frost.setNoGravity(false);
+                    frost.discard();
+                }
             }
         } catch (Exception ignored) {}
-        
+
         // Unlock camera and controls
-        ServerPlayNetworking.send(player, new CameraLockPayload(false, -1));
-        ServerPlayNetworking.send(player, new ControlLockPayload(false));
-        
-        // Remove darkness
-        player.removeStatusEffect(StatusEffects.DARKNESS);
+        CinematicLockSystem.unlockPlayer(player, "scheduled jumpscare cleanup");
         
         // Mark CH02 complete
         PlayerStoryState pState = PlayerStoryState.getState(player);
         pState.setFlag("ch02_completed", true);
     }
 }
-

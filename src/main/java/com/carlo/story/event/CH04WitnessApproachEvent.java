@@ -123,8 +123,12 @@ public class CH04WitnessApproachEvent implements StoryEvent {
                 player.removeStatusEffect(net.minecraft.entity.effect.StatusEffects.DARKNESS);
                 net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, new com.carlo.network.CameraLockPayload(false, 0));
                 net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, new com.carlo.network.ControlLockPayload(false));
+                com.carlo.story.PlayerStoryState.getState(player).setFlag("cinematic_locked", false);
                 net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, new CinematicLockPayload(false));
             }
         } catch(Exception ignored){}
     }
 }
+
+
+

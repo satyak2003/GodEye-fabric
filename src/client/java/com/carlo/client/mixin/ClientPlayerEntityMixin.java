@@ -13,9 +13,16 @@ public class ClientPlayerEntityMixin {
     @Inject(method = "tick", at = @At("HEAD"))
     private void lockCameraToEntity(CallbackInfo ci) {
         ClientPlayerEntity player = (ClientPlayerEntity)(Object)this;
+        if (ClientStoryState.isControlLocked || ClientStoryState.isCinematicLocked) {
+            player.forwardSpeed = 0;
+            player.sidewaysSpeed = 0;
+            player.setSprinting(false);
+
+        }
+
         if (ClientStoryState.isCameraLocked && ClientStoryState.cameraLockTargetId != -1) {
             Entity target = player.getEntityWorld().getEntityById(ClientStoryState.cameraLockTargetId);
-            if (target != null) {
+            if (target != null && !target.isRemoved() && target.isAlive()) {
                 double dx = target.getX() - player.getX();
                 double dy = target.getEyeY() - player.getEyeY();
                 double dz = target.getZ() - player.getZ();
@@ -26,10 +33,12 @@ public class ClientPlayerEntityMixin {
                 
                 player.setYaw(targetYaw);
                 player.setPitch(targetPitch);
-                
-                
+            } else {
+                ClientStoryState.isCameraLocked = false;
+                ClientStoryState.cameraLockTargetId = -1;
             }
         }
     }
 }
+
 

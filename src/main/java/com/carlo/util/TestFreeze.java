@@ -1,7 +1,8 @@
 package com.carlo.util;
 import net.minecraft.entity.Entity;
+import net.minecraft.server.network.ServerPlayerEntity;
 public class TestFreeze {
-    public static void test(Entity e) {
-        e.setFrozenTicks(200);
+    public static void test(ServerPlayerEntity player) {
+        player.setFrozenTicks(400);
     }
 }

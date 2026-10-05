@@ -1,8 +1,6 @@
 package com.carlo.story.event;
 
-import com.carlo.network.ControlLockPayload;
 import com.carlo.story.PlayerStoryState;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -20,13 +18,15 @@ public class CH04PlayerFreezeEvent implements StoryEvent {
         PlayerStoryState pState = PlayerStoryState.getState(player);
         if (pState.getFlag("ch04_completed") || pState.getFlag("ch04_witness_active")) return;
         
-        // Only lock movement
-        ServerPlayNetworking.send(player, new ControlLockPayload(true));
-        
         ServerWorld world = (ServerWorld) player.getEntityWorld();
-        long duration = 20 * (5 + world.random.nextInt(3)); // 5-7 seconds
         
-        EventScheduler.schedule(server, new ScheduledEvent("ch04_pl_unfreeze_" + player.getUuidAsString(), "ch04_player_unfreeze", world.getTime() + duration, "ch04", Optional.of(player.getUuid()), "", false));
+        // Duration: 12-20 seconds -> 240-400 ticks.
+        // Minecraft decays frozenTicks by 1 tick if the entity is just standing, but wait, usually it decreases by 2 if not in powder snow!
+        // In 1.21.11, the decay is 2 per tick. So to last 12-20 seconds (240-400 ticks), we need to set frozen ticks to (12-20) * 20 * 2 = 480 to 800 ticks.
+        // The max is 140 before damage starts. The scale starts rendering when it goes above 0, fully frosted at 140.
+        int seconds = 12 + world.random.nextInt(9); // 12 to 20 seconds
+        int frozenTicksTarget = seconds * 20 * 2;
+        player.setFrozenTicks(frozenTicksTarget);
         
         // Schedule next random freeze
         long nextDelay = 20 * (60 + world.random.nextInt(120)); // 1-3 minutes

@@ -18,6 +18,7 @@ public class Chapter00 implements Chapter {
 
     @Override
     public void onStart(MinecraftServer server) {
+        System.out.println("[GodEye DEBUG] Chapter00.onStart() ENTER");
         GlobalWorldState state = GlobalWorldState.getServerState(server);
         long currentTick = server.getWorld(World.OVERWORLD).getTime();
 
@@ -33,6 +34,8 @@ public class Chapter00 implements Chapter {
 
         long transitionDelay = 8400 + new Random().nextInt(14400 - 8400);
         ChapterTransitionStoryEvent.scheduleTransitionFlag(server, getId(), currentTick + transitionDelay, "ch00_transition_ready");
+        
+        System.out.println("[GodEye DEBUG] Chapter00.onStart() scheduled events = " + GlobalWorldState.getServerState(server).getScheduledEvents().size());
     }
 
     @Override
@@ -42,9 +45,23 @@ public class Chapter00 implements Chapter {
     @Override
     public boolean isComplete(MinecraftServer server) {
         GlobalWorldState state = GlobalWorldState.getServerState(server);
-        return state.getFlag("ch00_flash_done") && 
-               state.getFlag("ch00_freeze_done") && 
-               state.getFlag("ch00_transition_ready");
+        boolean flash = state.getFlag("ch00_flash_done");
+        boolean freeze = state.getFlag("ch00_freeze_done");
+        boolean transitionReady = state.getFlag("ch00_transition_ready");
+        boolean complete = flash && freeze && transitionReady;
+
+        boolean wasComplete = state.getFlag("ch00_complete_logged");
+        if (complete && !wasComplete) {
+            System.out.println("[GodEye DEBUG] CH00 completion check:");
+            System.out.println("flash=" + flash);
+            System.out.println("freeze=" + freeze);
+            System.out.println("transitionReady=" + transitionReady);
+            System.out.println("complete=" + complete);
+            System.out.println("[GodEye DEBUG] CH00 COMPLETE - requesting transition to ch01");
+            state.setFlag("ch00_complete_logged", true);
+        }
+
+        return complete;
     }
 
     @Override
@@ -91,3 +108,5 @@ public class Chapter00 implements Chapter {
         }
     }
 }
+
+

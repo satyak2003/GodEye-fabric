@@ -30,6 +30,7 @@ public class Chapter04 implements Chapter {
         if (pState.getFlag("ch04_witness_active")) {
             net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, new com.carlo.network.ControlLockPayload(false));
             net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, new com.carlo.network.CameraLockPayload(false, 0));
+            pState.setFlag("cinematic_locked", false);
             net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, new com.carlo.network.CinematicLockPayload(false));
             player.removeStatusEffect(net.minecraft.entity.effect.StatusEffects.DARKNESS);
             
@@ -126,22 +127,13 @@ if (pState.getFlag("ch04_snow_active")) {
                             }
                         }
                         
-                        if (!pState.getFlag("ch04_witness_active")) {
-                            if (player.getRandom().nextInt(20) == 0) {
-                                player.setFrozenTicks(800); // 800 ticks decay by 2 per tick = 400 ticks (20 seconds). Min is 140, so 660 / 2 = 330 ticks (16.5 seconds) of freeze damage
-                            }
-                        } else {
-                            if (player.getFrozenTicks() > 0) {
-                                player.setFrozenTicks(0);
-                            }
-                        }
                     }
                 }
             }
         }
     }
 
-        private void ch04EnvironmentalFreeze(ServerWorld world, BlockPos origin) {
+    private void ch04EnvironmentalFreeze(ServerWorld world, BlockPos origin) {
         // Target surface blocks primarily to efficiently find exposed water and ground
         for (int i=0; i<60; i++) {
             int dx = world.random.nextInt(60) - 30;
@@ -171,6 +163,9 @@ if (pState.getFlag("ch04_snow_active")) {
         return "ch05";
     }
 }
+
+
+
 
 
 

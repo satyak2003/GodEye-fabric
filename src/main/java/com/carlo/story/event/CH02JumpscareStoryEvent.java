@@ -2,11 +2,9 @@ package com.carlo.story.event;
 
 import com.carlo.Godeye;
 import com.carlo.entity.FrostEntity;
-import com.carlo.network.CameraLockPayload;
-import com.carlo.network.ControlLockPayload;
 import com.carlo.story.PlayerStoryState;
+import com.carlo.story.system.CinematicLockSystem;
 import com.carlo.story.system.SoundHelper;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.MinecraftServer;
@@ -34,7 +32,7 @@ public class CH02JumpscareStoryEvent implements StoryEvent {
         Vec3d pos = player.getEyePos().add(look.multiply(3.0)); // 3 blocks ahead
         
         int targetY = (int) pos.y;
-                FrostEntity frost = new FrostEntity(Godeye.FROST, world);
+        FrostEntity frost = new FrostEntity(Godeye.FROST, world);
         
         BlockPos safePos = null;
         for (int y = targetY + 2; y >= targetY - 4; y--) {
@@ -49,29 +47,34 @@ public class CH02JumpscareStoryEvent implements StoryEvent {
         }
         
         if (safePos == null) {
-            safePos = new BlockPos((int) pos.x, targetY, (int) pos.z); // Absolute fallback, though we hope it's rare
+            safePos = new BlockPos((int) pos.x, targetY, (int) pos.z);
             frost.setPosition(safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5);
         }
+        
         double dx = player.getX() - frost.getX();
-		double dz = player.getZ() - frost.getZ();
-		float frostYaw = (float)(Math.toDegrees(Math.atan2(dz, dx)) - 90.0);
-		
-		double dy = player.getEyeY() - frost.getEyeY();
-		double dist = Math.sqrt(dx * dx + dz * dz);
-		float frostPitch = (float)(-Math.toDegrees(Math.atan2(dy, dist)));
-		
-		frost.setYaw(frostYaw);
-		frost.setBodyYaw(frostYaw);
-		frost.setHeadYaw(frostYaw);
-		frost.setPitch(frostPitch);
-		
-		frost.setNoGravity(true);
-		world.spawnEntity(frost);
-		
-		// Lock controls and camera
-		player.closeHandledScreen();
-			ServerPlayNetworking.send(player, new ControlLockPayload(true));
-        ServerPlayNetworking.send(player, new CameraLockPayload(true, frost.getId()));
+        double dz = player.getZ() - frost.getZ();
+        float frostYaw = (float)(Math.toDegrees(Math.atan2(dz, dx)) - 90.0);
+        
+        double dy = player.getEyeY() - frost.getEyeY();
+        double dist = Math.sqrt(dx * dx + dz * dz);
+        float frostPitch = (float)(-Math.toDegrees(Math.atan2(dy, dist)));
+        
+        frost.setYaw(frostYaw);
+        frost.setBodyYaw(frostYaw);
+        frost.setHeadYaw(frostYaw);
+        frost.setPitch(frostPitch);
+        
+        frost.setNoGravity(true);
+        world.spawnEntity(frost);
+        
+        System.out.println("[GodEye DEBUG] CH02 jumpscare START playerPos=" + player.getEntityPos());
+        System.out.println("[GodEye DEBUG] CH02 control lock ENABLED");
+        System.out.println("[GodEye DEBUG] CH02 camera lock ENABLED target=" + frost.getId());
+        
+        // Lock controls and camera
+        player.closeHandledScreen();
+        PlayerStoryState.getState(player).setFlag("ch02_jumpscare_active", true);
+        CinematicLockSystem.applyLock(player, true, true, frost.getId());
         
         // Darkness effect
         player.addStatusEffect(new StatusEffectInstance(StatusEffects.DARKNESS, 100, 0, false, false, false));
@@ -85,7 +88,4 @@ public class CH02JumpscareStoryEvent implements StoryEvent {
         EventScheduler.schedule(server, new ScheduledEvent("ch02_clean_" + player.getUuidAsString(), "ch02_jumpscare_cleanup", currentTick + 100, "ch02", Optional.of(player.getUuid()), payload, false));
     }
 }
-
-
-
 

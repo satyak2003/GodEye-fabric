@@ -28,7 +28,7 @@ import net.minecraft.sound.SoundEvent;
 
 public class Godeye implements ModInitializer {
     public static final String MOD_ID = "godeye";
-    public static final Item NIGHTFALL_STAFF = new com.carlo.item.NightfallStaffItem(new Item.Settings().maxCount(1));
+    public static final Item NIGHTFALL_STAFF = new com.carlo.item.NightfallStaffItem(new Item.Settings().registryKey(net.minecraft.registry.RegistryKey.of(net.minecraft.registry.RegistryKeys.ITEM, Identifier.of("godeye", "nightfall_staff"))).maxCount(1).rarity(net.minecraft.util.Rarity.EPIC).fireproof());
     
     public static final EntityType<com.carlo.entity.FrostEntity> FROST = Registry.register(Registries.ENTITY_TYPE, Identifier.of("godeye", "frost"), FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, com.carlo.entity.FrostEntity::new).dimensions(EntityDimensions.fixed(0.6f, 1.8f)).build(net.minecraft.registry.RegistryKey.of(net.minecraft.registry.RegistryKeys.ENTITY_TYPE, Identifier.of("godeye", "frost"))));
     public static final EntityType<com.carlo.entity.WitnessEntity> WITNESS = Registry.register(Registries.ENTITY_TYPE, Identifier.of("godeye", "witness"), FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, com.carlo.entity.WitnessEntity::new).dimensions(EntityDimensions.fixed(0.6f, 2.2f).withEyeHeight(2.1f)).build(net.minecraft.registry.RegistryKey.of(net.minecraft.registry.RegistryKeys.ENTITY_TYPE, Identifier.of("godeye", "witness"))));
@@ -86,11 +86,34 @@ public class Godeye implements ModInitializer {
         FabricDefaultAttributeRegistry.register(GODEYE_WATCHER, WatcherEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(WITNESS, com.carlo.entity.WitnessEntity.setAttributes());
         
+        System.out.println("[GodEye DEBUG] Registering chapter: ch00");
+        com.carlo.story.ChapterRegistry.register(new com.carlo.story.Chapter00());
+        System.out.println("[GodEye DEBUG] Registering chapter: ch01");
+        com.carlo.story.ChapterRegistry.register(new com.carlo.story.Chapter01());
+        System.out.println("[GodEye DEBUG] Registering chapter: ch02");
+        com.carlo.story.ChapterRegistry.register(new com.carlo.story.Chapter02());
+        System.out.println("[GodEye DEBUG] Registering chapter: ch03");
+        com.carlo.story.ChapterRegistry.register(new com.carlo.story.Chapter03());
+        System.out.println("[GodEye DEBUG] Registering chapter: ch04");
+        com.carlo.story.ChapterRegistry.register(new com.carlo.story.Chapter04());
+        System.out.println("[GodEye DEBUG] Chapter registry bootstrap complete");
+        System.out.println("[GodEye DEBUG] ch00 registered = " + (com.carlo.story.ChapterRegistry.get("ch00") != null));
+        System.out.println("[GodEye DEBUG] ch01 registered = " + (com.carlo.story.ChapterRegistry.get("ch01") != null));
+        System.out.println("[GodEye DEBUG] ch02 registered = " + (com.carlo.story.ChapterRegistry.get("ch02") != null));
+        System.out.println("[GodEye DEBUG] ch03 registered = " + (com.carlo.story.ChapterRegistry.get("ch03") != null));
+        System.out.println("[GodEye DEBUG] ch04 registered = " + (com.carlo.story.ChapterRegistry.get("ch04") != null));
+
         com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.TeleportAnomalyStoryEvent());
+        com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.ChapterTransitionStoryEvent());
+        com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.ControlLockStoryEvent());
         com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.LeafDecayStoryEvent());
         com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.MobVanishStoryEvent());
         com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.NightFlashStoryEvent());
         com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH02JumpscareStoryEvent());
+        com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH02JumpscareCleanupStoryEvent());
+        com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH02DebugEvents.CH02StartTriggerEvent());
+        com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH02DebugEvents.CH02TimeoutTriggerEvent());
+        com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH02DebugEvents.CH02ResetTriggerEvent());
         com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.FrostJoinStoryEvent());
         com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH02MessageStoryEvent());
         com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH03StartEncounterEvent());
@@ -144,10 +167,14 @@ public class Godeye implements ModInitializer {
         net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
             com.carlo.story.PlayerStoryState state = com.carlo.story.PlayerStoryState.getState(newPlayer);
             if (state.getDeathPos() != null) {
-                newPlayer.setPosition(state.getDeathPos().getX() + 0.5, state.getDeathPos().getY(), state.getDeathPos().getZ() + 0.5);
-                newPlayer.setYaw(state.getDeathYaw());
-                newPlayer.setPitch(state.getDeathPitch());
-                state.setInvulnerabilityEndTick(newPlayer.getEntityWorld().getTime() + 200);
+                net.minecraft.server.world.ServerWorld targetWorld = ((net.minecraft.server.world.ServerWorld)newPlayer.getEntityWorld()).getServer().getWorld(net.minecraft.registry.RegistryKey.of(net.minecraft.registry.RegistryKeys.WORLD, net.minecraft.util.Identifier.tryParse(state.getDeathDimension())));
+                if (targetWorld == null) targetWorld = ((net.minecraft.server.world.ServerWorld)newPlayer.getEntityWorld()).getServer().getOverworld();
+                
+                net.minecraft.util.math.BlockPos safePos = com.carlo.util.SafeSurfacePositionResolver.resolveSafeSurface(targetWorld, state.getDeathPos().getX(), state.getDeathPos().getZ(), 5);
+                if (safePos == null) safePos = state.getDeathPos();
+                
+                newPlayer.teleport(targetWorld, safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5, java.util.Set.of(), state.getDeathYaw(), state.getDeathPitch(), true);
+                state.setInvulnerabilityEndTick(targetWorld.getTime() + 200);
             }
         });
         ServerTickEvents.END_SERVER_TICK.register(this::onServerTick);
@@ -155,7 +182,14 @@ public class Godeye implements ModInitializer {
 
     private void onServerTick(net.minecraft.server.MinecraftServer server) {
         com.carlo.story.ChapterManager.tick(server);
+        com.carlo.story.system.CinematicLockSystem.tick(server);
         com.carlo.story.event.EventScheduler.tick(server);
     }
 }
+
+
+
+
+
+
 

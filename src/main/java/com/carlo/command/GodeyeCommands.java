@@ -1,4 +1,6 @@
 package com.carlo.command;
+import com.mojang.brigadier.context.CommandContext;
+import net.minecraft.server.command.ServerCommandSource;
 
 import com.carlo.story.ChapterManager;
 import com.carlo.story.ChapterRegistry;
@@ -13,6 +15,14 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 
 public class GodeyeCommands {
+    public static ServerPlayerEntity getTargetPlayer(CommandContext<ServerCommandSource> context) {
+        try {
+            ServerPlayerEntity p = context.getSource().getPlayer();
+            if (p != null) return p;
+        } catch (Exception ignored) {}
+        java.util.List<ServerPlayerEntity> list = context.getSource().getServer().getPlayerManager().getPlayerList();
+        return list.isEmpty() ? null : list.get(0);
+    }
     public static void register() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(CommandManager.literal("godeye")
@@ -39,8 +49,15 @@ public class GodeyeCommands {
                             })
                         )
                     )
+                    .then(CommandManager.literal("death").executes(context -> {
+                        ServerPlayerEntity p = getTargetPlayer(context);
+                        if (p != null) {
+                            com.carlo.story.system.DeathSystem.onPlayerDeath(p);
+                        }
+                        return 1;
+                    }))
                     .then(CommandManager.literal("ch02_start").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if(p != null) {
                             PlayerStoryState state = PlayerStoryState.getState(p);
                             state.setFlag("ch02_started", false);
@@ -53,7 +70,7 @@ public class GodeyeCommands {
                         return 1;
                     }))
                     .then(CommandManager.literal("ch02_respond").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if(p != null) {
                             new com.carlo.story.event.CH02ResponseLogicStoryEvent().execute(context.getSource().getServer(), null, p);
                         }
@@ -61,7 +78,7 @@ public class GodeyeCommands {
                         return 1;
                     }))
                     .then(CommandManager.literal("ch02_timeout").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if(p != null) {
                             PlayerStoryState state = PlayerStoryState.getState(p);
                             state.setFlag("ch02_debug_fast", true);
@@ -70,29 +87,25 @@ public class GodeyeCommands {
                         return 1;
                     }))
                     .then(CommandManager.literal("ch02_jumpscare").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if(p != null) {
                             new com.carlo.story.event.CH02JumpscareStoryEvent().execute(context.getSource().getServer(), null, p);
                         }
                         context.getSource().sendMessage(Text.literal("Triggered Frost CH02 jumpscare."));
                         return 1;
                     }))
-                    .then(CommandManager.literal("ch02_reset").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
-                        if(p != null) {
-                            PlayerStoryState state = PlayerStoryState.getState(p);
-                            state.setFlag("ch02_started", false);
-                            state.setFlag("ch02_responded", false);
-                            state.setFlag("ch02_completed", false);
-                            state.setFlag("ch02_response_window_active", false);
-                        }
-                        context.getSource().sendMessage(Text.literal("CH02 flags reset for player."));
-                        return 1;
-                    }))
+                                          .then(CommandManager.literal("ch02_reset").executes(context -> {
+                          ServerPlayerEntity p = getTargetPlayer(context);
+                          if(p != null) {
+                              new com.carlo.story.event.CH02DebugEvents.CH02ResetTriggerEvent().execute(context.getSource().getServer(), null, p);
+                          }
+                          context.getSource().sendMessage(Text.literal("CH02 flags and jumpscare reset for player."));
+                          return 1;
+                      }))
                                         .then(CommandManager.literal("status")
                         .executes(context -> {
                             MinecraftServer server = context.getSource().getServer();
-                            ServerPlayerEntity player = context.getSource().getPlayer();
+                            ServerPlayerEntity player = getTargetPlayer(context);
                             GlobalWorldState state = GlobalWorldState.getServerState(server);
                             StringBuilder sb = new StringBuilder();
                             sb.append("\u00A7a=== GodEye Status ===\u00A7r\n");
@@ -113,7 +126,7 @@ public class GodeyeCommands {
                         })
                     )
                                         .then(CommandManager.literal("watcher").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if (p != null) {
                             com.carlo.entity.WatcherEntity watcher = com.carlo.story.system.watcher.WatcherEncounterSystem.spawnWatcher(p, 12.0, 20.0);
                             if (watcher != null) {
@@ -129,7 +142,7 @@ public class GodeyeCommands {
                         return 1;
                     }))
                     .then(CommandManager.literal("watcher_seen").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if(p != null) {
                             PlayerStoryState.getState(p).setFlag("ch03_watcher_seen", true);
                             context.getSource().sendMessage(Text.literal("Forced CH03 Watcher seen flag."));
@@ -137,7 +150,7 @@ public class GodeyeCommands {
                         return 1;
                     }))
                     .then(CommandManager.literal("watcher_relocate").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if(p != null) {
                             String uuidStr = "";
                             for(ScheduledEvent ev : GlobalWorldState.getServerState(context.getSource().getServer()).getScheduledEvents()) {
@@ -152,7 +165,7 @@ public class GodeyeCommands {
                         return 1;
                     }))
                     .then(CommandManager.literal("watcher_vanish").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if(p != null) {
                             String uuidStr = "";
                             for(ScheduledEvent ev : GlobalWorldState.getServerState(context.getSource().getServer()).getScheduledEvents()) {
@@ -179,7 +192,7 @@ public class GodeyeCommands {
                         return 1;
                     }))
                     .then(CommandManager.literal("frost").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if (p != null) {
                             com.carlo.entity.FrostEntity frost = new com.carlo.entity.FrostEntity(com.carlo.Godeye.FROST, ((net.minecraft.server.world.ServerWorld)p.getEntityWorld()));
                             frost.refreshPositionAndAngles(p.getX() + 5, p.getY(), p.getZ(), 0, 0);
@@ -194,7 +207,7 @@ public class GodeyeCommands {
                                 String eventId = StringArgumentType.getString(context, "event_id");
                                 com.carlo.story.event.StoryEvent logic = com.carlo.story.event.EventRegistry.get(eventId);
                                 if (logic != null) {
-                                    logic.execute(context.getSource().getServer(), null, context.getSource().getPlayer());
+                                    logic.execute(context.getSource().getServer(), null, getTargetPlayer(context));
                                     context.getSource().sendMessage(Text.literal("Triggered event: " + eventId));
                                 } else {
                                     context.getSource().sendMessage(Text.literal("Event logic not found for: " + eventId));
@@ -207,7 +220,7 @@ public class GodeyeCommands {
                         .then(CommandManager.argument("value", com.mojang.brigadier.arguments.IntegerArgumentType.integer())
                             .executes(context -> {
                                 int val = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "value");
-                                ServerPlayerEntity p = context.getSource().getPlayer();
+                                ServerPlayerEntity p = getTargetPlayer(context);
                                 if (p != null) {
                                     PlayerStoryState.getState(p).setObservationLevel(val);
                                     context.getSource().sendMessage(Text.literal("Set observation level to " + val));
@@ -217,7 +230,7 @@ public class GodeyeCommands {
                         )
                     )
                                           .then(CommandManager.literal("ch03_encounter").executes(context -> {
-                          ServerPlayerEntity p = context.getSource().getPlayer();
+                          ServerPlayerEntity p = getTargetPlayer(context);
                           if(p != null) {
                               new com.carlo.story.event.CH03EncounterCompleteEvent().execute(context.getSource().getServer(), new com.carlo.story.event.ScheduledEvent("dbg", "ch03_encounter_complete", 0, "ch03", java.util.Optional.empty(), "dbg", false), p);
                               context.getSource().sendMessage(net.minecraft.text.Text.literal("Forced CH03 encounter to complete."));
@@ -225,7 +238,7 @@ public class GodeyeCommands {
                           return 1;
                       }))
                       .then(CommandManager.literal("ch03_finale").executes(context -> {
-                          ServerPlayerEntity p = context.getSource().getPlayer();
+                          ServerPlayerEntity p = getTargetPlayer(context);
                           if(p != null) {
                               new com.carlo.story.event.CH03FinaleStartEvent().execute(context.getSource().getServer(), null, p);
                               context.getSource().sendMessage(net.minecraft.text.Text.literal("Forced CH03 finale start."));
@@ -233,7 +246,7 @@ public class GodeyeCommands {
                           return 1;
                       }))
                       .then(CommandManager.literal("ch03_state").executes(context -> {
-                          ServerPlayerEntity p = context.getSource().getPlayer();
+                          ServerPlayerEntity p = getTargetPlayer(context);
                           if(p != null) {
                               com.carlo.story.PlayerStoryState state = com.carlo.story.PlayerStoryState.getState(p);
                               int count = state.getCh03EncounterCount();
@@ -245,7 +258,7 @@ public class GodeyeCommands {
                           return 1;
                       }))
                                           .then(CommandManager.literal("ch04_start").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if(p != null) {
                             com.carlo.story.ChapterManager.debugForceChapter(context.getSource().getServer(), "ch04");
                             context.getSource().sendMessage(net.minecraft.text.Text.literal("Started CH04."));
@@ -253,7 +266,7 @@ public class GodeyeCommands {
                         return 1;
                     }))
                     .then(CommandManager.literal("ch04_witness").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if(p != null) {
                             com.carlo.story.event.EventScheduler.schedule(context.getSource().getServer(), new com.carlo.story.event.ScheduledEvent("ch04_witness_" + p.getUuidAsString(), "ch04_witness_start", context.getSource().getServer().getOverworld().getTime() + 20, "ch04", java.util.Optional.of(p.getUuid()), "", false));
                             context.getSource().sendMessage(net.minecraft.text.Text.literal("Triggering CH04 Witness Sequence."));
@@ -261,7 +274,7 @@ public class GodeyeCommands {
                         return 1;
                     }))
                                         .then(CommandManager.literal("ch04_state").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if (p != null) {
                             com.carlo.story.GlobalWorldState gState = com.carlo.story.GlobalWorldState.getServerState(context.getSource().getServer());
                             com.carlo.story.PlayerStoryState state = com.carlo.story.PlayerStoryState.getState(p);
@@ -310,7 +323,7 @@ public class GodeyeCommands {
                         return 1;
                     }))
                     .then(CommandManager.literal("ch04_freeze").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if (p != null) {
                             com.carlo.story.event.EventScheduler.schedule(context.getSource().getServer(), new com.carlo.story.event.ScheduledEvent("ch04_pl_freeze_" + p.getUuidAsString(), "ch04_player_freeze", context.getSource().getServer().getOverworld().getTime() + 20, "ch04", java.util.Optional.of(p.getUuid()), "", false));
                             context.getSource().sendMessage(net.minecraft.text.Text.literal("Triggering CH04 Player Freeze."));
@@ -318,7 +331,7 @@ public class GodeyeCommands {
                         return 1;
                     }))
                     .then(CommandManager.literal("ch04_snow").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if (p != null) {
                             com.carlo.story.event.EventScheduler.schedule(context.getSource().getServer(), new com.carlo.story.event.ScheduledEvent("ch04_snow_" + p.getUuidAsString(), "ch04_snow_start", context.getSource().getServer().getOverworld().getTime() + 20, "ch04", java.util.Optional.of(p.getUuid()), "", false));
                             context.getSource().sendMessage(net.minecraft.text.Text.literal("Triggering CH04 Snow Phase."));
@@ -326,7 +339,7 @@ public class GodeyeCommands {
                         return 1;
                     }))
                     .then(CommandManager.literal("ch04_night").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if (p != null) {
                             com.carlo.story.event.EventScheduler.schedule(context.getSource().getServer(), new com.carlo.story.event.ScheduledEvent("ch04_night_" + p.getUuidAsString(), "ch04_night_start", context.getSource().getServer().getOverworld().getTime() + 20, "ch04", java.util.Optional.of(p.getUuid()), "", false));
                             context.getSource().sendMessage(net.minecraft.text.Text.literal("Triggering CH04 Night."));
@@ -334,7 +347,7 @@ public class GodeyeCommands {
                         return 1;
                     }))
                     .then(CommandManager.literal("ch04_reset").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if (p != null) {
                             com.carlo.story.PlayerStoryState state = com.carlo.story.PlayerStoryState.getState(p);
                             state.setFlag("ch04_started", false);
@@ -346,7 +359,7 @@ public class GodeyeCommands {
                     }))
 
                     .then(CommandManager.literal("ch03_start").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if(p != null) {
                             ChapterManager.debugForceChapter(context.getSource().getServer(), "ch03");
                             context.getSource().sendMessage(Text.literal("Started CH03."));
@@ -354,7 +367,7 @@ public class GodeyeCommands {
                         return 1;
                     }))
                     .then(CommandManager.literal("ch03_complete").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if(p != null) {
                             new com.carlo.story.event.CH03EndEvent().execute(context.getSource().getServer(), null, p);
                             context.getSource().sendMessage(Text.literal("Completed CH03."));
@@ -362,7 +375,7 @@ public class GodeyeCommands {
                         return 1;
                     }))
                     .then(CommandManager.literal("watcher_finale").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if(p != null) {
                             new com.carlo.story.event.CH03FinaleStartEvent().execute(context.getSource().getServer(), null, p);
                             context.getSource().sendMessage(net.minecraft.text.Text.literal("Started Watcher Finale."));
@@ -370,7 +383,7 @@ public class GodeyeCommands {
                         return 1;
                     }))
                     .then(CommandManager.literal("watcher_finale_watchers").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if(p != null) {
                             // Only spawn the 7-9 watchers
                             net.minecraft.server.world.ServerWorld world = (net.minecraft.server.world.ServerWorld) p.getEntityWorld();
@@ -403,7 +416,7 @@ public class GodeyeCommands {
                         return 1;
                     }))
                     .then(CommandManager.literal("watcher_finale_cinematic").executes(context -> {
-                        ServerPlayerEntity p = context.getSource().getPlayer();
+                        ServerPlayerEntity p = getTargetPlayer(context);
                         if(p != null) {
                             long startTick = context.getSource().getServer().getOverworld().getTime();
                             com.carlo.story.event.EventScheduler.schedule(context.getSource().getServer(), new com.carlo.story.event.ScheduledEvent("dbg_fin_1", "ch03_finale_cinematic", startTick + 20, "ch03", java.util.Optional.of(p.getUuid()), "blackscreen", false));
@@ -464,7 +477,16 @@ public class GodeyeCommands {
                                         }
                                         state.markDirty();
                                     }
-                                    PlayerStoryState.getState(context.getSource().getPlayer()).setFlag(chapterId + "_debug_fast", true);
+                                                                        ServerPlayerEntity cmdPlayer = null;
+                                    try { cmdPlayer = getTargetPlayer(context); } catch (Exception ignored) {}
+                                    if (cmdPlayer != null) {
+                                        PlayerStoryState.getState(cmdPlayer).setFlag(chapterId + "_debug_fast", true);
+                                    } else {
+                                        for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+                                            PlayerStoryState.getState(p).setFlag(chapterId + "_debug_fast", true);
+                                        }
+                                    }
+                                    state.setFlag(chapterId + "_debug_fast", true);
                                     context.getSource().sendMessage(Text.literal("Transitioned to chapter (FAST MODE): " + chapterId));
                                     return 1;
                                 })
@@ -476,6 +498,11 @@ public class GodeyeCommands {
         });
     }
 }
+
+
+
+
+
 
 
 

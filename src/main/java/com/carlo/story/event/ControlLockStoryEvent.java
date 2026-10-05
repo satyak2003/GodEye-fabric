@@ -31,9 +31,11 @@ public class ControlLockStoryEvent implements StoryEvent {
     }
 
     private void applyLock(ServerPlayerEntity player, boolean lock) {
-        PlayerStoryState state = PlayerStoryState.getState(player);
-        state.setFlag("control_locked", lock);
-        ServerPlayNetworking.send(player, new ControlLockPayload(lock));
+        if (lock) {
+            com.carlo.story.system.CinematicLockSystem.applyLock(player, true, false, -1);
+        } else {
+            com.carlo.story.system.CinematicLockSystem.unlockPlayer(player);
+        }
     }
     
     public static void scheduleLock(MinecraftServer server, String chapterId, Optional<UUID> target, long targetTick, boolean lock) {
@@ -41,3 +43,4 @@ public class ControlLockStoryEvent implements StoryEvent {
         EventScheduler.schedule(server, new ScheduledEvent("lock_" + System.currentTimeMillis(), "control_lock", targetTick, chapterId, target, payload, false));
     }
 }
+
