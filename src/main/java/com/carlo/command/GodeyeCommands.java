@@ -248,12 +248,46 @@ public class GodeyeCommands {
                       .then(CommandManager.literal("ch03_state").executes(context -> {
                           ServerPlayerEntity p = getTargetPlayer(context);
                           if(p != null) {
-                              com.carlo.story.PlayerStoryState state = com.carlo.story.PlayerStoryState.getState(p);
-                              int count = state.getCh03EncounterCount();
-                              int relocs = state.getCh03RelocationCount();
-                              boolean started = state.getFlag("ch03_started");
-                              boolean completed = state.getFlag("ch03_completed");
-                              context.getSource().sendMessage(net.minecraft.text.Text.literal(String.format("CH03 State:\nEncounters: %d\nRelocs: %d\nStarted: %b\nCompleted: %b", count, relocs, started, completed)));
+                              com.carlo.story.PlayerStoryState pState = com.carlo.story.PlayerStoryState.getState(p);
+                              GlobalWorldState gState = GlobalWorldState.getServerState(context.getSource().getServer());
+                              
+                              int count = pState.getCh03EncounterCount();
+                              int relocs = pState.getCh03RelocationCount();
+                              boolean started = pState.getFlag("ch03_started");
+                              boolean completed = pState.getFlag("ch03_completed");
+                              boolean seen = pState.getFlag("ch03_watcher_seen");
+                              
+                              StringBuilder sb = new StringBuilder();
+                              sb.append("\u00A7b=== CH03 State ===\u00A7r\n");
+                              sb.append("Active Chapter: ").append(gState.getActiveChapterId()).append("\n");
+                              sb.append(String.format("Encounters: %d | Relocs: %d\n", count, relocs));
+                              sb.append(String.format("Flags -> Started: %b | Completed: %b | Seen: %b\n", started, completed, seen));
+                              sb.append("Observation Level: ").append(pState.getObservationLevel()).append("\n");
+                              
+                              String watcherUuid = null;
+                              for(ScheduledEvent ev : gState.getScheduledEvents()) {
+                                  if (ev.chapterId().equals("ch03")) {
+                                      sb.append(" Event: ").append(ev.eventType()).append(" (Target: ").append(ev.targetTick()).append(")\n");
+                                      if (ev.eventType().equals("ch03_observation_tick") && ev.playerUuid().isPresent() && ev.playerUuid().get().equals(p.getUuid())) {
+                                          watcherUuid = ev.payload();
+                                      }
+                                  }
+                              }
+                              
+                              if (watcherUuid != null && !watcherUuid.isEmpty()) {
+                                  com.carlo.entity.WatcherEntity watcher = com.carlo.story.system.watcher.WatcherEncounterSystem.getWatcher((net.minecraft.server.world.ServerWorld)p.getEntityWorld(), watcherUuid);
+                                  if (watcher != null && !watcher.isRemoved()) {
+                                      sb.append("\u00A7e--- Watcher Entity ---\u00A7r\n");
+                                      sb.append("ID: ").append(watcherUuid).append("\n");
+                                      sb.append(String.format("Position: %.1f, %.1f, %.1f\n", watcher.getX(), watcher.getY(), watcher.getZ()));
+                                      sb.append(String.format("Distance to Player: %.1f blocks\n", Math.sqrt(p.squaredDistanceTo(watcher))));
+                                  } else {
+                                      sb.append("\u00A7c--- Watcher Entity ---\u00A7r\n");
+                                      sb.append("ID: ").append(watcherUuid).append(" (NOT FOUND / REMOVED)\n");
+                                  }
+                              }
+                              
+                              context.getSource().sendMessage(net.minecraft.text.Text.literal(sb.toString()));
                           }
                           return 1;
                       }))

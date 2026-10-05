@@ -123,6 +123,7 @@ public class Godeye implements ModInitializer {
         com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH03FinaleStartEvent());
         com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH03FinaleCinematicEvent());
         com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH03EndEvent());
+        com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH03WatcherApproachEvent());
         
         com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH04NightStartEvent());
         com.carlo.story.event.EventRegistry.register(new com.carlo.story.event.CH04SnowStartEvent());
@@ -183,6 +184,7 @@ public class Godeye implements ModInitializer {
     private void onServerTick(net.minecraft.server.MinecraftServer server) {
         com.carlo.story.ChapterManager.tick(server);
         com.carlo.story.system.CinematicLockSystem.tick(server);
+        com.carlo.story.system.PersistentAnomalySystem.tick(server);
         com.carlo.story.event.EventScheduler.tick(server);
     }
 }
